@@ -33,6 +33,12 @@ namespace Connect4
             {
                 for (int x = 0; x < size; x++)
                 {
+                    // Clear the cell streaks.
+                    cellStreaks[streakIndex, y].horizontal = 0;
+                    cellStreaks[streakIndex, y].vertical = 0;
+                    cellStreaks[streakIndex, y].positiveDiagonal = 0;
+                    cellStreaks[streakIndex, y].negativeDiagonal = 0;
+
                     if (grid[y, x] != TileState.Empty)
                     {
                         // Check horizontal streaks.
@@ -83,6 +89,7 @@ namespace Connect4
                     }
                 }
 
+                // Swap which array is the bottom and which is current.
                 streakIndex = 1 - streakIndex;
             }
 
