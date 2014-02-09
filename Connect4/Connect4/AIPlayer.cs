@@ -5,12 +5,12 @@ using Microsoft.Xna.Framework;
 
 namespace Connect4
 {
-    class Player
+    class AIPlayer
     {
         private int player;
-        private const int moveLookAhead = 7;
+        private const int moveLookAhead = 5;
 
-        public Player(int player)
+        public AIPlayer(int player)
         {
             this.player = player;
         }

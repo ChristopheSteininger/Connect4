@@ -10,7 +10,7 @@ namespace Connect4
         : DrawableGameComponent
     {
         private int currentPlayer = 0;
-        private Player[] players = new Player[2];
+        private AIPlayer[] players = new AIPlayer[2];
 
         private Grid grid;
 
@@ -19,7 +19,7 @@ namespace Connect4
         private SpriteBatch spriteBatch;
         private Texture2D disc;
 
-        public Board(int gridSize, Player player1, Player player2, Game game)
+        public Board(int gridSize, AIPlayer player1, AIPlayer player2, Game game)
             : base(game)
         {
             Debug.Assert(gridSize > 0);
@@ -28,8 +28,6 @@ namespace Connect4
             this.players[1] = player2;
 
             this.grid = new Grid(gridSize);
-            //
-            //grid.Where(x => x == TileState.Player1);
         }
 
         protected override void LoadContent()
