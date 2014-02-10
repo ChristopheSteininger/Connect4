@@ -67,6 +67,9 @@ namespace Connect4
         {
             spriteBatch.Begin();
 
+            int boardStartX = (GraphicsDevice.Viewport.Width - grid.Size * disc.Width) / 2;
+            int boardStartY = (GraphicsDevice.Viewport.Height - grid.Size * disc.Height) / 2;
+
             for (int y = 0; y < grid.Size; y++)
             {
                 for (int x = 0; x < grid.Size; x++)
@@ -74,11 +77,13 @@ namespace Connect4
                     Color color = Color.White;
                     if (grid[y, x] != TileState.Empty)
                     {
-                        color = grid[y, x] == TileState.Player1 ? Color.Yellow : Color.Red;
+                        color = (grid[y, x] == TileState.Player1 ? Color.Yellow : Color.Red);
                     }
 
-                    spriteBatch.Draw(disc, new Vector2(x * disc.Width,
-                        GraphicsDevice.Viewport.Height - (y + 1) * disc.Height), color);
+                    Vector2 position = new Vector2(boardStartX + x * disc.Width,
+                        boardStartY + (grid.Size - y - 1) * disc.Height);
+
+                    spriteBatch.Draw(disc, position, color);
                 }
             }
 
