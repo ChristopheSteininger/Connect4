@@ -18,6 +18,11 @@ namespace Connect4
 
         private List<MinimaxNode> children = new List<MinimaxNode>();
 
+        public int Score
+        {
+            get { return score; }
+        }
+
         public MinimaxNode(Grid state, int score)
         {
             this.state = state;

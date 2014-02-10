@@ -8,7 +8,7 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
-        private readonly int moveLookAhead = 5;
+        private readonly int moveLookAhead = 9;
         private MinimaxNode root;
 
         private MouseState oldMouseState;
@@ -33,7 +33,8 @@ namespace Connect4
                 Logger.Log("New move");
                 Logger.Log(grid.ToString());
 
-                root = Minimax(moveLookAhead, grid, player);
+                root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
+                    MinimaxNode.Infinity);
                 bestMove = root.GetBestMove();
             }
 
@@ -42,7 +43,8 @@ namespace Connect4
             return bestMove;
         }
 
-        private MinimaxNode Minimax(int depth, Grid state, int currentPlayer)
+        private MinimaxNode Minimax(int depth, Grid state, int currentPlayer,
+            int alpha, int beta)
         {
             Debug.Assert(depth >= 0);
 
@@ -65,8 +67,25 @@ namespace Connect4
             {
                 if (state.IsValidMove(move))
                 {
-                    result.AddChild(Minimax(depth - 1, state.Move(move, currentPlayer),
-                        1 - currentPlayer), move);
+                    MinimaxNode child = Minimax(depth - 1, state.Move(move, currentPlayer),
+                        1 - currentPlayer, alpha, beta);
+                    result.AddChild(child, move);
+
+                    // Update alpha and beta values.
+                    if (currentPlayer == player)
+                    {
+                        alpha = Math.Max(alpha, child.Score);
+                    }
+                    else
+                    {
+                        beta = Math.Min(beta, child.Score);
+                    }
+
+                    // Possibly return early.
+                    if (beta <= alpha)
+                    {
+                        return result;
+                    }
                 }
             }
 
