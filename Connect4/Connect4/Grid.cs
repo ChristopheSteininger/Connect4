@@ -55,7 +55,7 @@ namespace Connect4
 
         public bool IsValidMove(int column)
         {
-            return nextFreeTile[column] < size;
+            return 0 <= column && column < size && nextFreeTile[column] < size;
         }
 
         public int[] GetPlayerStreaks(int player)

@@ -5,17 +5,16 @@ using Microsoft.Xna.Framework;
 
 namespace Connect4
 {
-    class AIPlayer
+    class AIPlayer : Player
     {
-        private int player;
         private const int moveLookAhead = 5;
 
         public AIPlayer(int player)
+            : base(player)
         {
-            this.player = player;
         }
 
-        public int GetMove(Grid grid)
+        public override int GetMove(Grid grid)
         {
             Logger.Log("New move");
             Logger.Log(grid.ToString());
@@ -31,17 +30,11 @@ namespace Connect4
         {
             Debug.Assert(depth >= 0);
 
-            // Return the maximum value if the player won the game.
-            if (state.IsGameOver() == player)
+            // Evaluate the state if this is a terminal state.
+            int gameOverResult = state.IsGameOver();
+            if (depth == 0 || gameOverResult != -1)
             {
-                return int.MaxValue;
-            }
-
-            // Guess how good the state is if the maximum depth has
-            // been reached.
-            if (depth == 0)
-            {
-                return Heuristic(state, player);
+                return EvaluateState(state, gameOverResult, player);
             }
 
             // Mark the bestMove to be set to the first valid move.
@@ -51,7 +44,7 @@ namespace Connect4
             }
 
             // Otherwise, find the best move.
-            int best = int.MinValue;
+            int best = int.MinValue + 1;
             for (int move = 0; move < state.Size; move++)
             {
                 if (state.IsValidMove(move))
@@ -83,17 +76,11 @@ namespace Connect4
         {
             Debug.Assert(depth >= 0);
 
-            // Return the minimum value if the opposing player won the game.
-            if (state.IsGameOver() == 1 - player)
+            // Evaluate the state if this is a terminal state.
+            int gameOverResult = state.IsGameOver();
+            if (depth == 0 || gameOverResult != -1)
             {
-                return int.MinValue;
-            }
-
-            // Guess how good the state is if the maximum depth has
-            // been reached.
-            if (depth == 0)
-            {
-                return Heuristic(state, 1 - player);
+                return -EvaluateState(state, gameOverResult, 1 - player);
             }
 
             // Otherwise, find the worst move which the opposing player can
@@ -112,8 +99,21 @@ namespace Connect4
             return worst;
         }
 
-        private int Heuristic(Grid state, int player)
+        private int EvaluateState(Grid state, int gameOverResult, int player)
         {
+            // Return the maximum value if the player won the game.
+            if (gameOverResult == player)
+            {
+                return int.MaxValue;
+            }
+
+            // Return the minimum value if the opposing player won the game.
+            if (gameOverResult == 1 - player)
+            {
+                return int.MinValue + 1;
+            }
+
+            // Otherwise, guess how good the state is.
             int[] streaks = state.GetPlayerStreaks(player);
             int heuristic = streaks[0] + 3 * streaks[1] + 5 * streaks[2];
 

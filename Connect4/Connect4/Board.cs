@@ -10,7 +10,7 @@ namespace Connect4
         : DrawableGameComponent
     {
         private int currentPlayer = 0;
-        private AIPlayer[] players = new AIPlayer[2];
+        private Player[] players = new Player[2];
 
         private Grid grid;
 
@@ -19,7 +19,7 @@ namespace Connect4
         private SpriteBatch spriteBatch;
         private Texture2D disc;
 
-        public Board(int gridSize, AIPlayer player1, AIPlayer player2, Game game)
+        public Board(int gridSize, Player player1, Player player2, Game game)
             : base(game)
         {
             Debug.Assert(gridSize > 0);
@@ -41,11 +41,7 @@ namespace Connect4
 
         public override void Update(GameTime gameTime)
         {
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed
-                && oldMouseState.LeftButton == ButtonState.Released)
-            {
-                PlayTurn();
-            }
+            PlayTurn();
 
             oldMouseState = Mouse.GetState();
 
@@ -58,8 +54,12 @@ namespace Connect4
 
             if (grid.IsGameOver() == -1)
             {
-                grid = grid.Move(players[currentPlayer].GetMove(grid), currentPlayer);
-                currentPlayer = 1 - currentPlayer;
+                int move = players[currentPlayer].GetMove(grid);
+                if (grid.IsValidMove(move))
+                {
+                    grid = grid.Move(move, currentPlayer);
+                    currentPlayer = 1 - currentPlayer;
+                }
             }
         }
 
