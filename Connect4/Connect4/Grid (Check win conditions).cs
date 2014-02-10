@@ -33,11 +33,11 @@ namespace Connect4
             {
                 for (int x = 0; x < size; x++)
                 {
-                    // Clear the cell streaks.
-                    cellStreaks[streakIndex, y].horizontal = 0;
-                    cellStreaks[streakIndex, y].vertical = 0;
-                    cellStreaks[streakIndex, y].positiveDiagonal = 0;
-                    cellStreaks[streakIndex, y].negativeDiagonal = 0;
+                    // Clear the current cell streaks.
+                    cellStreaks[streakIndex, x].horizontal = 0;
+                    cellStreaks[streakIndex, x].vertical = 0;
+                    cellStreaks[streakIndex, x].positiveDiagonal = 0;
+                    cellStreaks[streakIndex, x].negativeDiagonal = 0;
 
                     if (grid[y, x] != TileState.Empty)
                     {
