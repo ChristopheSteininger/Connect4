@@ -53,6 +53,12 @@ namespace Connect4
             }
         }
 
+        public bool IsValidMove(int column, int row)
+        {
+            return IsValidMove(column) && 0 <= row && row < size
+                && nextFreeTile[column] == row;
+        }
+
         public bool IsValidMove(int column)
         {
             return 0 <= column && column < size && nextFreeTile[column] < size;

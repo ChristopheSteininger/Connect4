@@ -8,7 +8,9 @@ namespace Connect4
 {
     class HumanPlayer : Player
     {
-        private KeyboardState oldKeyboardState;
+        private int highlightedColumn;
+
+        private MouseState oldMouseState;
         private List<Keys> numberKeys = new List<Keys>();
 
         public HumanPlayer(int player)
@@ -22,16 +24,22 @@ namespace Connect4
         {
             int move = -1;
 
-            // Only allow one key to be pressed.
-            Keys[] pressedKeys = Keyboard.GetState().GetPressedKeys();
-            if (pressedKeys.Length != 0 && oldKeyboardState.IsKeyUp(pressedKeys[0]))
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed
+                && oldMouseState.LeftButton == ButtonState.Released)
             {
-                move = numberKeys.IndexOf(pressedKeys[0]);
+                move = highlightedColumn;
             }
 
-            oldKeyboardState = Keyboard.GetState();
+            oldMouseState = Mouse.GetState();
 
             return move;
+        }
+
+        public override int HighlightColumn(int startX, int columnWidth)
+        {
+            highlightedColumn = (Mouse.GetState().X - startX) / columnWidth;
+
+            return highlightedColumn;
         }
     }
 }
