@@ -2,31 +2,47 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 
 namespace Connect4
 {
     class AIPlayer : Player
     {
-        private const int moveLookAhead = 5;
+        private readonly int moveLookAhead = 5;
+        private MinimaxNode root;
+
+        private MouseState oldMouseState;
 
         public AIPlayer(int player)
             : base(player)
         {
         }
 
+        public AIPlayer(int player, int moveLookAhead)
+            : base(player)
+        {
+            this.moveLookAhead = moveLookAhead;
+        }
+
         public override int GetMove(Grid grid)
         {
-            Logger.Log("New move");
-            Logger.Log(grid.ToString());
+            int bestMove = -1;
+            if (true)//Mouse.GetState().LeftButton == ButtonState.Pressed
+                //&& oldMouseState.LeftButton == ButtonState.Released)
+            {
+                Logger.Log("New move");
+                Logger.Log(grid.ToString());
 
-            int bestMove = 0;
-            Maximise(moveLookAhead, grid, true, ref bestMove);
+                root = Minimax(moveLookAhead, grid, player);
+                bestMove = root.GetBestMove();
+            }
+
+            oldMouseState = Mouse.GetState();
 
             return bestMove;
         }
 
-        private int Maximise(int depth, Grid state, bool setBestMove,
-            ref int bestMove)
+        private MinimaxNode Minimax(int depth, Grid state, int currentPlayer)
         {
             Debug.Assert(depth >= 0);
 
@@ -34,69 +50,27 @@ namespace Connect4
             int gameOverResult = state.IsGameOver();
             if (depth == 0 || gameOverResult != -1)
             {
-                return EvaluateState(state, gameOverResult, player);
-            }
+                int score = EvaluateState(state, gameOverResult, currentPlayer);
+                if (currentPlayer != player)
+                {
+                    score *= -1;
+                }
 
-            // Mark the bestMove to be set to the first valid move.
-            if (setBestMove)
-            {
-                bestMove = -1;
+                return new MinimaxNode(state, score);
             }
 
             // Otherwise, find the best move.
-            int best = int.MinValue + 1;
+            MinimaxNode result = new MinimaxNode(state, currentPlayer == player);
             for (int move = 0; move < state.Size; move++)
             {
                 if (state.IsValidMove(move))
                 {
-                    int result = Minimise(depth - 1, state.Move(move, player),
-                        false, ref bestMove);
-
-                    if (result > best)
-                    {
-                        best = result;
-                        if (setBestMove)
-                        {
-                            bestMove = move;
-                        }
-                    }
-
-                    if (setBestMove && bestMove == -1)
-                    {
-                        bestMove = move;
-                    }
+                    result.AddChild(Minimax(depth - 1, state.Move(move, currentPlayer),
+                        1 - currentPlayer), move);
                 }
             }
 
-            return best;
-        }
-
-        private int Minimise(int depth, Grid state, bool setBestMove,
-            ref int bestMove)
-        {
-            Debug.Assert(depth >= 0);
-
-            // Evaluate the state if this is a terminal state.
-            int gameOverResult = state.IsGameOver();
-            if (depth == 0 || gameOverResult != -1)
-            {
-                return -EvaluateState(state, gameOverResult, 1 - player);
-            }
-
-            // Otherwise, find the worst move which the opposing player can
-            // make.
-            int worst = int.MaxValue;
-            for (int move = 0; move < state.Size; move++)
-            {
-                if (state.IsValidMove(move))
-                {
-                    int result = Maximise(depth - 1, state.Move(move, 1 - player),
-                        false, ref bestMove);
-                    worst = Math.Min(result, worst);
-                }
-            }
-
-            return worst;
+            return result;
         }
 
         private int EvaluateState(Grid state, int gameOverResult, int player)
@@ -104,13 +78,13 @@ namespace Connect4
             // Return the maximum value if the player won the game.
             if (gameOverResult == player)
             {
-                return int.MaxValue;
+                return MinimaxNode.Infinity;
             }
 
             // Return the minimum value if the opposing player won the game.
             if (gameOverResult == 1 - player)
             {
-                return int.MinValue + 1;
+                return -MinimaxNode.Infinity;
             }
 
             // Otherwise, guess how good the state is.

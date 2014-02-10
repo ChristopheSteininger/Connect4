@@ -113,6 +113,7 @@
     <Compile Include="HumanPlayer.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="AIPlayer.cs" />
+    <Compile Include="MinimaxNode.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
