@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Connect4
 {
-    enum TileState { Player1, Player2, Empty }
+    enum TileState { Player1 = 0, Player2 = 1, Empty = 2 }
 
     partial class Grid
     {
@@ -21,30 +21,33 @@ namespace Connect4
 
         private int[] nextFreeTile;
 
-        private TileState[,] grid;
+        // Each ulong represents a player's pieces on the board. The first width
+        // bits represent the bottom row, if the bit is 0, then the player does
+        // not have a piece on that position otherwise the player does have piece
+        // at that position. The next width bits represent the second row and so
+        // on.
+        private ulong[] playerPositions;
         public TileState this[int row, int column]
         {
-            get { return grid[row, column]; }
+            get { return GetTileState(row, column); }
         }
 
         public Grid(int width, int height)
         {
             Debug.Assert(width > 4);
             Debug.Assert(height > 4);
+            Debug.Assert(width * height <= 64);
 
             this.width = width;
             this.height = height;
 
-            this.grid = new TileState[height, width];
             this.nextFreeTile = new int[width];
             for (int y = 0; y < height; y++)
             {
                 nextFreeTile[y] = 0;
-                for (int x = 0; x < width; x++)
-                {
-                    this.grid[y, x] = TileState.Empty;
-                }
             }
+
+            this.playerPositions = new ulong[2] { 0, 0 };
         }
 
         private Grid(Grid grid)
@@ -52,20 +55,43 @@ namespace Connect4
             this.width = grid.width;
             this.height = grid.height;
 
-            this.grid = new TileState[height, width];
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    this.grid[y, x] = grid.grid[y, x];
-                }
-            }
+            this.playerPositions = new ulong[2] {
+                grid.playerPositions[0], grid.playerPositions[1] };
 
             this.nextFreeTile = new int[width];
             for (int x = 0; x < width; x++)
             {
                 this.nextFreeTile[x] = grid.nextFreeTile[x];
             }
+        }
+
+        private TileState GetTileState(int row, int column)
+        {
+            if (PlayerPieceAtPosition(0, row, column))
+            {
+                return TileState.Player1;
+            }
+
+            else if (PlayerPieceAtPosition(1, row, column))
+            {
+                return TileState.Player2;
+            }
+
+            return TileState.Empty;
+        }
+
+        private void SetTileState(TileState state, int row, int column)
+        {
+            Debug.Assert(GetTileState(row, column) == TileState.Empty);
+
+            ulong mask = (ulong)1 << (column + row * width);
+            playerPositions[(int)state] |= mask;
+        }
+
+        private bool PlayerPieceAtPosition(int player, int row, int column)
+        {
+            ulong mask = (ulong)1 << (column + row * width);
+            return (playerPositions[player] & mask) == mask;
         }
 
         public bool IsValidMove(int column, int row)
@@ -96,13 +122,13 @@ namespace Connect4
                 for (int column = 0; column < width; column++)
                 {
                     // If this could be the start of a new streak.
-                    if (grid[row, column] == playerTile && currentStart == -1)
+                    if (GetTileState(row, column) == playerTile && currentStart == -1)
                     {
                         currentStart = column;
                     }
 
                     // If this is the end of any streak.
-                    else if ((grid[row, column] != playerTile || column == width - 1)
+                    else if ((GetTileState(row, column) != playerTile || column == width - 1)
                         && currentStart != -1)
                     {
                         // If the streak was longer than one tile.
@@ -126,9 +152,7 @@ namespace Connect4
 
             Grid result = new Grid(this);
 
-            TileState state = player == 0 ? TileState.Player1 : TileState.Player2;
-            result.grid[nextFreeTile[column], column] = state;
-
+            result.SetTileState((TileState)player, nextFreeTile[column], column);
             result.nextFreeTile[column]++;
 
             return result;
@@ -142,7 +166,7 @@ namespace Connect4
             {
                 for (int column = 0; column < width; column++)
                 {
-                    switch (grid[row, column])
+                    switch (GetTileState(row, column))
                     {
                         case TileState.Empty:
                             result += "-";

@@ -103,7 +103,7 @@ namespace Connect4
             // Evaluate the state if this is a terminal state.
             if (depth == 0)
             {
-                return new MinimaxNode(state, EvaluateState(state));
+                return new MinimaxNode(EvaluateState(state));
             }
 
             int gameOverResult = state.IsGameOver();
@@ -112,18 +112,18 @@ namespace Connect4
             if (gameOverResult == player)
             {
                 endNodesSearched++;
-                return new MinimaxNode(state, MinimaxNode.Infinity);
+                return new MinimaxNode(MinimaxNode.Infinity);
             }
 
             // Return the minimum value if the opposing player won the game.
             if (gameOverResult == 1 - player)
             {
                 endNodesSearched++;
-                return new MinimaxNode(state, -MinimaxNode.Infinity);
+                return new MinimaxNode(-MinimaxNode.Infinity);
             }
 
             // Otherwise, find the best move.
-            MinimaxNode result = new MinimaxNode(state, currentPlayer == player);
+            MinimaxNode result = new MinimaxNode(currentPlayer == player);
             for (int move = 0; move < state.Width; move++)
             {
                 if (state.IsValidMove(move))

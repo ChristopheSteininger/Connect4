@@ -8,7 +8,6 @@ namespace Connect4
 {
     class MinimaxNode
     {
-        private Grid state;
         private bool maximise;
 
         private int score;
@@ -39,15 +38,13 @@ namespace Connect4
 
         private List<MinimaxNode> children = new List<MinimaxNode>();
 
-        public MinimaxNode(Grid state, int score)
+        public MinimaxNode(int score)
         {
-            this.state = state;
             this.score = score;
         }
 
-        public MinimaxNode(Grid state, bool maximise)
+        public MinimaxNode(bool maximise)
         {
-            this.state = state;
             this.score = (maximise ? int.MinValue : int.MaxValue);
             this.maximise = maximise;
         }

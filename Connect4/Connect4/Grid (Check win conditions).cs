@@ -39,51 +39,51 @@ namespace Connect4
                     cellStreaks[streakIndex, x].positiveDiagonal = 0;
                     cellStreaks[streakIndex, x].negativeDiagonal = 0;
 
-                    if (grid[y, x] != TileState.Empty)
+                    if (GetTileState(y, x) != TileState.Empty)
                     {
                         // Check horizontal streaks.
-                        if (x > 0 && grid[y, x] == grid[y, x - 1])
+                        if (x > 0 && GetTileState(y, x) == GetTileState(y, x - 1))
                         {
                             cellStreaks[streakIndex, x].horizontal =
                                 cellStreaks[streakIndex, x - 1].horizontal + 1;
                             if (cellStreaks[streakIndex, x].horizontal == 3)
                             {
-                                return (int)grid[y, x];
+                                return (int)GetTileState(y, x);
                             }
                         }
 
                         // Check vertical streaks.
-                        if (y > 0 && grid[y, x] == grid[y - 1, x])
+                        if (y > 0 && GetTileState(y, x) == GetTileState(y - 1, x))
                         {
                             cellStreaks[streakIndex, x].vertical =
                                 cellStreaks[1 - streakIndex, x].vertical + 1;
                             if (cellStreaks[streakIndex, x].vertical == 3)
                             {
-                                return (int)grid[y, x];
+                                return (int)GetTileState(y, x);
                             }
                         }
 
                         // Check positive diagonal streaks.
                         if (x > 0 && y > 0
-                            && grid[y, x] == grid[y - 1, x - 1])
+                            && GetTileState(y, x) == GetTileState(y - 1, x - 1))
                         {
                             cellStreaks[streakIndex, x].positiveDiagonal =
                                 cellStreaks[1 - streakIndex, x - 1].positiveDiagonal + 1;
                             if (cellStreaks[streakIndex, x].positiveDiagonal == 3)
                             {
-                                return (int)grid[y, x];
+                                return (int)GetTileState(y, x);
                             }
                         }
 
                         // Check negative diagonal streaks.
                         if (x < width - 1 && y > 0
-                            && grid[y, x] == grid[y - 1, x + 1])
+                            && GetTileState(y, x) == GetTileState(y - 1, x + 1))
                         {
                             cellStreaks[streakIndex, x].negativeDiagonal =
                                 cellStreaks[1 - streakIndex, x + 1].negativeDiagonal + 1;
                             if (cellStreaks[streakIndex, x].negativeDiagonal == 3)
                             {
-                                return (int)grid[y, x];
+                                return (int)GetTileState(y, x);
                             }
                         }
                     }
