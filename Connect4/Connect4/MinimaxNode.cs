@@ -9,19 +9,35 @@ namespace Connect4
     class MinimaxNode
     {
         private Grid state;
-        private int score;
         private bool maximise;
 
-        private int bestMove;
-
-        public const int Infinity = 1000000;
-
-        private List<MinimaxNode> children = new List<MinimaxNode>();
-
+        private int score;
         public int Score
         {
             get { return score; }
         }
+
+        private MinimaxNode bestChild;
+        public MinimaxNode BestChild
+        {
+            get { return bestChild; }
+        }
+
+        private int bestMove;
+        public int BestMove
+        {
+            get { return bestMove; }
+        }
+
+        private int move;
+        public int Move
+        {
+            get { return move; }
+        }
+
+        public const int Infinity = 1000000;
+
+        private List<MinimaxNode> children = new List<MinimaxNode>();
 
         public MinimaxNode(Grid state, int score)
         {
@@ -38,6 +54,7 @@ namespace Connect4
 
         public void AddChild(MinimaxNode child, int move)
         {
+            child.move = move;
             children.Add(child);
 
             if (maximise && child.score > score
@@ -45,6 +62,7 @@ namespace Connect4
             {
                 score = child.score;
                 bestMove = move;
+                bestChild = child;
             }
         }
 
@@ -55,9 +73,9 @@ namespace Connect4
             return children[index];
         }
 
-        public int GetBestMove()
+        public List<MinimaxNode> GetChildren()
         {
-            return bestMove;
+            return new List<MinimaxNode>(children);
         }
     }
 }

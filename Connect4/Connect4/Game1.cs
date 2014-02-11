@@ -42,7 +42,6 @@ namespace Connect4
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            Logger.StartLog("logfile.txt");
 
             base.Initialize();
         }
@@ -63,7 +62,6 @@ namespace Connect4
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
-            Logger.Close();
         }
 
         /// <summary>

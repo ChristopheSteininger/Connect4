@@ -8,10 +8,15 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
-        private readonly int moveLookAhead = 9;
+        private readonly int moveLookAhead = 8;
         private MinimaxNode root;
 
         private MouseState oldMouseState;
+
+        // Statistics for console.
+        private bool printToConsole = true;
+        private int totalNodesSearched;
+        private int endNodesSearched;
 
         public AIPlayer(int player)
             : base(player)
@@ -30,12 +35,18 @@ namespace Connect4
             if (true)//Mouse.GetState().LeftButton == ButtonState.Pressed
                 //&& oldMouseState.LeftButton == ButtonState.Released)
             {
-                Logger.Log("New move");
-                Logger.Log(grid.ToString());
+                if (printToConsole)
+                {
+                    totalNodesSearched = 0;
+                    endNodesSearched = 0;
+                    Console.Write("Calculating next move . . . ");
+                }
 
                 root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
                     MinimaxNode.Infinity);
-                bestMove = root.GetBestMove();
+                bestMove = root.BestMove;
+
+                PrintMoveStatistics();
             }
 
             oldMouseState = Mouse.GetState();
@@ -43,21 +54,56 @@ namespace Connect4
             return bestMove;
         }
 
+        private void PrintMoveStatistics()
+        {
+            if (printToConsole)
+            {
+                Console.WriteLine("Done");
+                Console.WriteLine("{0} nodes searched, including {1} end nodes.",
+                    totalNodesSearched, endNodesSearched);
+
+                // Scores the scores of the child and grandchild states.
+                Console.WriteLine("Move scores (Move[Score](Grandchildren):");
+                foreach (MinimaxNode child in root.GetChildren())
+                {
+                    // Highlight the move taken by the computer.
+                    if (child == root.BestChild)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                    }
+
+                    // Print the grandchildrne.
+                    Console.Write("\t{0}[{1}](", child.Move, child.Score);
+                    foreach (MinimaxNode grandchild in child.GetChildren())
+                    {
+                        Console.Write("{0}[{1}] ", grandchild.Move, grandchild.Score);
+                    }
+                    Console.WriteLine("\b) ");
+
+                    Console.ResetColor();
+                }
+
+                Console.WriteLine("(Best opponent move is {0}).",
+                    root.BestChild.BestMove);
+
+                Console.WriteLine();
+            }
+        }
+
         private MinimaxNode Minimax(int depth, Grid state, int currentPlayer,
             int alpha, int beta)
         {
             Debug.Assert(depth >= 0);
 
+            totalNodesSearched++;
+
             // Evaluate the state if this is a terminal state.
             int gameOverResult = state.IsGameOver();
             if (depth == 0 || gameOverResult != -1)
             {
-                int score = EvaluateState(state, gameOverResult, currentPlayer);
-                if (currentPlayer != player)
-                {
-                    score *= -1;
-                }
+                int score = EvaluateState(state, gameOverResult);
 
+                endNodesSearched += (gameOverResult != -1 ? 1 : 0);
                 return new MinimaxNode(state, score);
             }
 
@@ -74,11 +120,11 @@ namespace Connect4
                     // Update alpha and beta values.
                     if (currentPlayer == player)
                     {
-                        alpha = Math.Max(alpha, child.Score);
+                        alpha = result.Score;
                     }
                     else
                     {
-                        beta = Math.Min(beta, child.Score);
+                        beta = result.Score;
                     }
 
                     // Possibly return early.
@@ -92,7 +138,7 @@ namespace Connect4
             return result;
         }
 
-        private int EvaluateState(Grid state, int gameOverResult, int player)
+        private int EvaluateState(Grid state, int gameOverResult)
         {
             // Return the maximum value if the player won the game.
             if (gameOverResult == player)
@@ -109,10 +155,6 @@ namespace Connect4
             // Otherwise, guess how good the state is.
             int[] streaks = state.GetPlayerStreaks(player);
             int heuristic = streaks[0] + 3 * streaks[1] + 5 * streaks[2];
-
-            Logger.Log("Streaks: 0:" + streaks[0] + " 1:" + streaks[1] + " 2:" + streaks[2]);
-            Logger.Log("Returning " + heuristic);
-            Logger.ExitLevel();
 
             return heuristic;
         }
