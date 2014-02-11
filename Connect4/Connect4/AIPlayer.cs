@@ -8,7 +8,7 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
-        private readonly int moveLookAhead = 8;
+        private readonly int moveLookAhead = 9;
         private MinimaxNode root;
 
         private MouseState oldMouseState;
@@ -42,11 +42,14 @@ namespace Connect4
                     Console.Write("Calculating next move . . . ");
                 }
 
+                DateTime startTime = DateTime.Now;
                 root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
                     MinimaxNode.Infinity);
+                double runtime = (DateTime.Now - startTime).TotalMilliseconds;
+
                 bestMove = root.BestMove;
 
-                PrintMoveStatistics();
+                PrintMoveStatistics(runtime);
             }
 
             oldMouseState = Mouse.GetState();
@@ -54,13 +57,13 @@ namespace Connect4
             return bestMove;
         }
 
-        private void PrintMoveStatistics()
+        private void PrintMoveStatistics(double runtime)
         {
             if (printToConsole)
             {
                 Console.WriteLine("Done");
-                Console.WriteLine("{0} nodes searched, including {1} end nodes.",
-                    totalNodesSearched, endNodesSearched);
+                Console.WriteLine("{0} nodes searched, including {1} end nodes in {2} ms.",
+                    totalNodesSearched, endNodesSearched, runtime);
 
                 // Scores the scores of the child and grandchild states.
                 Console.WriteLine("Move scores (Move[Score](Grandchildren):");
@@ -98,18 +101,30 @@ namespace Connect4
             totalNodesSearched++;
 
             // Evaluate the state if this is a terminal state.
-            int gameOverResult = state.IsGameOver();
-            if (depth == 0 || gameOverResult != -1)
+            if (depth == 0)
             {
-                int score = EvaluateState(state, gameOverResult);
+                return new MinimaxNode(state, EvaluateState(state));
+            }
 
-                endNodesSearched += (gameOverResult != -1 ? 1 : 0);
-                return new MinimaxNode(state, score);
+            int gameOverResult = state.IsGameOver();
+
+            // Return the maximum value if the player won the game.
+            if (gameOverResult == player)
+            {
+                endNodesSearched++;
+                return new MinimaxNode(state, MinimaxNode.Infinity);
+            }
+
+            // Return the minimum value if the opposing player won the game.
+            if (gameOverResult == 1 - player)
+            {
+                endNodesSearched++;
+                return new MinimaxNode(state, -MinimaxNode.Infinity);
             }
 
             // Otherwise, find the best move.
             MinimaxNode result = new MinimaxNode(state, currentPlayer == player);
-            for (int move = 0; move < state.Size; move++)
+            for (int move = 0; move < state.Width; move++)
             {
                 if (state.IsValidMove(move))
                 {
@@ -138,20 +153,8 @@ namespace Connect4
             return result;
         }
 
-        private int EvaluateState(Grid state, int gameOverResult)
+        private int EvaluateState(Grid state)
         {
-            // Return the maximum value if the player won the game.
-            if (gameOverResult == player)
-            {
-                return MinimaxNode.Infinity;
-            }
-
-            // Return the minimum value if the opposing player won the game.
-            if (gameOverResult == 1 - player)
-            {
-                return -MinimaxNode.Infinity;
-            }
-
             // Otherwise, guess how good the state is.
             int[] streaks = state.GetPlayerStreaks(player);
             int heuristic = streaks[0] + 3 * streaks[1] + 5 * streaks[2];

@@ -23,7 +23,8 @@ namespace Connect4Test
             set { testContextInstance = value; }
         }
 
-        private const int size = 6;
+        private const int width = 6;
+        private const int height = 6;
 
         #region Additional test attributes
         // 
@@ -64,18 +65,18 @@ namespace Connect4Test
         {
             for (int player = 0; player < 2; player++)
             {
-                Grid grid = new Grid(size);
+                Grid grid = new Grid(width, height);
                 TileState expectedState = (TileState)player;
-                for (int row = 0; row < size; row++)
+                for (int row = 0; row < height; row++)
                 {
-                    for (int column = 0; column < size; column++)
+                    for (int column = 0; column < width; column++)
                     {
                         grid = grid.Move(column, player);
 
                         // Test that only the expected tiles are filled.
-                        for (int testrow = 0; testrow < size; testrow++)
+                        for (int testrow = 0; testrow < height; testrow++)
                         {
-                            for (int testcolumn = 0; testcolumn < size; testcolumn++)
+                            for (int testcolumn = 0; testcolumn < width; testcolumn++)
                             {
                                 if (testrow < row || (testrow == row && testcolumn <= column))
                                 {
@@ -95,20 +96,20 @@ namespace Connect4Test
         [TestMethod()]
         public void MoveTestAlternatingPlayer()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             int currentPlayer = 0;
 
-            for (int row = 0; row < size; row++)
+            for (int row = 0; row < height; row++)
             {
-                for (int column = 0; column < size; column++)
+                for (int column = 0; column < width; column++)
                 {
                     grid = grid.Move(column, currentPlayer);
                     currentPlayer = 1 - currentPlayer;
 
                     // Test that only the expected tiles are filled with the correct player.
-                    for (int testrow = 0; testrow < size; testrow++)
+                    for (int testrow = 0; testrow < height; testrow++)
                     {
-                        for (int testcolumn = 0; testcolumn < size; testcolumn++)
+                        for (int testcolumn = 0; testcolumn < width; testcolumn++)
                         {
                             if (testrow < row || (testrow == row && testcolumn <= column))
                             {
@@ -133,7 +134,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverHorizontalTest()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(1, 0);
@@ -143,17 +144,17 @@ namespace Connect4Test
             grid = grid.Move(3, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
-            grid = new Grid(size);
-            grid = grid.Move(size - 1, 1);
+            grid = new Grid(width, height);
+            grid = grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 2, 1);
+            grid = grid.Move(width - 2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 3, 1);
+            grid = grid.Move(width - 3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 4, 1);
+            grid = grid.Move(width - 4, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
-            grid = new Grid(size);
+            grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(1, 1);
@@ -188,7 +189,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverVerticalTest()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(0, 0);
@@ -198,17 +199,17 @@ namespace Connect4Test
             grid = grid.Move(0, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
-            grid = new Grid(size);
-            grid = grid.Move(size - 1, 1);
+            grid = new Grid(width, height);
+            grid = grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 1, 1);
+            grid = grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 1, 1);
+            grid = grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(size - 1, 1);
+            grid = grid.Move(width - 1, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
-            grid = new Grid(size);
+            grid = new Grid(width, height);
             grid = grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(4, 1);
@@ -253,7 +254,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverPositiveDiagonalTest()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(1, 1);
@@ -275,7 +276,7 @@ namespace Connect4Test
             grid = grid.Move(3, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
-            grid = new Grid(size);
+            grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(1, 1);
@@ -320,7 +321,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverNegativeDiagonalTest()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             grid = grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(4, 0);
@@ -342,7 +343,7 @@ namespace Connect4Test
             grid = grid.Move(2, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
-            grid = new Grid(size);
+            grid = new Grid(width, height);
             grid = grid.Move(5, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(4, 1);
@@ -380,7 +381,7 @@ namespace Connect4Test
             grid = grid.Move(0, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
-            grid = new Grid(size);
+            grid = new Grid(width, height);
             grid = grid.Move(0, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
             grid = grid.Move(1, 0);
@@ -435,7 +436,7 @@ namespace Connect4Test
         [TestMethod()]
         public void GetPlayerStreaksTest()
         {
-            Grid grid = new Grid(size);
+            Grid grid = new Grid(width, height);
             grid = grid.Move(0, 0);
             AssertArraysEqual(new int[] { 0, 0, 0 }, grid.GetPlayerStreaks(0));
             grid = grid.Move(1, 0);

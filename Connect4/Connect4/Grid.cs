@@ -7,10 +7,16 @@ namespace Connect4
 
     partial class Grid
     {
-        private readonly int size;
-        public int Size
+        private readonly int width;
+        public int Width
         {
-            get { return size; }
+            get { return width; }
+        }
+
+        private readonly int height;
+        public int Height
+        {
+            get { return height; }
         }
 
         private int[] nextFreeTile;
@@ -21,17 +27,20 @@ namespace Connect4
             get { return grid[row, column]; }
         }
 
-        public Grid(int size)
+        public Grid(int width, int height)
         {
-            Debug.Assert(size > 4);
+            Debug.Assert(width > 4);
+            Debug.Assert(height > 4);
 
-            this.size = size;
-            this.grid = new TileState[size, size];
-            this.nextFreeTile = new int[size];
-            for (int y = 0; y < size; y++)
+            this.width = width;
+            this.height = height;
+
+            this.grid = new TileState[height, width];
+            this.nextFreeTile = new int[width];
+            for (int y = 0; y < height; y++)
             {
                 nextFreeTile[y] = 0;
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
                     this.grid[y, x] = TileState.Empty;
                 }
@@ -40,28 +49,34 @@ namespace Connect4
 
         private Grid(Grid grid)
         {
-            this.size = grid.size;
-            this.grid = new TileState[size, size];
-            this.nextFreeTile = new int[size];
-            for (int y = 0; y < size; y++)
+            this.width = grid.width;
+            this.height = grid.height;
+
+            this.grid = new TileState[height, width];
+            for (int y = 0; y < height; y++)
             {
-                this.nextFreeTile[y] = grid.nextFreeTile[y];
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
                     this.grid[y, x] = grid.grid[y, x];
                 }
+            }
+
+            this.nextFreeTile = new int[width];
+            for (int x = 0; x < width; x++)
+            {
+                this.nextFreeTile[x] = grid.nextFreeTile[x];
             }
         }
 
         public bool IsValidMove(int column, int row)
         {
-            return IsValidMove(column) && 0 <= row && row < size
+            return IsValidMove(column) && 0 <= row && row < height
                 && nextFreeTile[column] == row;
         }
 
         public bool IsValidMove(int column)
         {
-            return 0 <= column && column < size && nextFreeTile[column] < size;
+            return 0 <= column && column < width && nextFreeTile[column] < height;
         }
 
         public int[] GetPlayerStreaks(int player)
@@ -75,10 +90,10 @@ namespace Connect4
                 result[i] = 0;
             }
 
-            for (int row = 0; row < size; row++)
+            for (int row = 0; row < height; row++)
             {
                 int currentStart = -1;
-                for (int column = 0; column < size; column++)
+                for (int column = 0; column < width; column++)
                 {
                     // If this could be the start of a new streak.
                     if (grid[row, column] == playerTile && currentStart == -1)
@@ -87,7 +102,7 @@ namespace Connect4
                     }
 
                     // If this is the end of any streak.
-                    else if ((grid[row, column] != playerTile || column == size - 1)
+                    else if ((grid[row, column] != playerTile || column == width - 1)
                         && currentStart != -1)
                     {
                         // If the streak was longer than one tile.
@@ -106,8 +121,8 @@ namespace Connect4
 
         public Grid Move(int column, int player)
         {
-            Debug.Assert(0 <= column && column < size);
-            Debug.Assert(nextFreeTile[column] < size);
+            Debug.Assert(0 <= column && column < width);
+            Debug.Assert(nextFreeTile[column] < height);
 
             Grid result = new Grid(this);
 
@@ -123,9 +138,9 @@ namespace Connect4
         {
             string result = "";
 
-            for (int row = size - 1; row >= 0; row--)
+            for (int row = height - 1; row >= 0; row--)
             {
-                for (int column = 0; column < size; column++)
+                for (int column = 0; column < width; column++)
                 {
                     switch (grid[row, column])
                     {

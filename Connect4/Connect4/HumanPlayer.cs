@@ -8,7 +8,7 @@ namespace Connect4
 {
     class HumanPlayer : Player
     {
-        private int highlightedColumn;
+        private int highlightedColumn = -1;
 
         private MouseState oldMouseState;
         private List<Keys> numberKeys = new List<Keys>();
@@ -35,9 +35,19 @@ namespace Connect4
             return move;
         }
 
-        public override int HighlightColumn(int startX, int columnWidth)
+        public override int HighlightColumn(int startX, int startY, int endY,
+            int columnSize)
         {
-            highlightedColumn = (Mouse.GetState().X - startX) / columnWidth;
+            MouseState mouseState = Mouse.GetState();
+
+            if (startY <= mouseState.Y && mouseState.Y <= endY)
+            {
+                highlightedColumn = (Mouse.GetState().X - startX) / columnSize;
+            }
+            else
+            {
+                highlightedColumn = -1;
+            }
 
             return highlightedColumn;
         }

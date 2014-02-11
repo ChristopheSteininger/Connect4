@@ -23,13 +23,13 @@ namespace Connect4
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferWidth = 920;
-            graphics.PreferredBackBufferHeight = 680;
+            graphics.PreferredBackBufferWidth = 500;
+            graphics.PreferredBackBufferHeight = 500;
             Content.RootDirectory = "Content";
 
             IsMouseVisible = true;
 
-            board = new Board(6, new AIPlayer(0), new HumanPlayer(1), this);
+            board = new Board(7, 6, new HumanPlayer(0), new AIPlayer(1), this);
             Components.Add(board);
         }
 

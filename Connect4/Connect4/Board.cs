@@ -22,15 +22,14 @@ namespace Connect4
         private SpriteBatch spriteBatch;
         private Texture2D disc;
 
-        public Board(int gridSize, Player player1, Player player2, Game game)
+        public Board(int gridWidth, int gridHeight, Player player1, Player player2,
+            Game game)
             : base(game)
         {
-            Debug.Assert(gridSize > 0);
-
             this.players[0] = player1;
             this.players[1] = player2;
 
-            this.grid = new Grid(gridSize);
+            this.grid = new Grid(gridWidth, gridHeight);
         }
 
         protected override void LoadContent()
@@ -57,7 +56,8 @@ namespace Connect4
 
             if (grid.IsGameOver() == -1)
             {
-                highlighedColumn = players[currentPlayer].HighlightColumn(boardStartX,
+                highlighedColumn = players[currentPlayer].HighlightColumn(
+                    boardStartX, boardStartY, boardStartY + grid.Height * disc.Height,
                     disc.Width);
                 int move = players[currentPlayer].GetMove(grid);
 
@@ -73,12 +73,12 @@ namespace Connect4
         {
             spriteBatch.Begin();
 
-            boardStartX = (GraphicsDevice.Viewport.Width - grid.Size * disc.Width) / 2;
-            boardStartY = (GraphicsDevice.Viewport.Height - grid.Size * disc.Height) / 2;
+            boardStartX = (GraphicsDevice.Viewport.Width - grid.Width * disc.Width) / 2;
+            boardStartY = (GraphicsDevice.Viewport.Height - grid.Height * disc.Height) / 2;
 
-            for (int y = 0; y < grid.Size; y++)
+            for (int y = 0; y < grid.Height; y++)
             {
-                for (int x = 0; x < grid.Size; x++)
+                for (int x = 0; x < grid.Width; x++)
                 {
                     Color color = Color.White;
                     Color[] playerColors = { Color.Yellow, Color.Red };
@@ -102,7 +102,7 @@ namespace Connect4
                     }
 
                     Vector2 position = new Vector2(boardStartX + x * disc.Width,
-                        boardStartY + (grid.Size - y - 1) * disc.Height);
+                        boardStartY + (grid.Height - y - 1) * disc.Height);
 
                     spriteBatch.Draw(disc, position, color);
                 }

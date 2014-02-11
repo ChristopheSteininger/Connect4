@@ -48,7 +48,7 @@ namespace Connect4
         public MinimaxNode(Grid state, bool maximise)
         {
             this.state = state;
-            this.score = (maximise ? -Infinity : Infinity);
+            this.score = (maximise ? int.MinValue : int.MaxValue);
             this.maximise = maximise;
         }
 

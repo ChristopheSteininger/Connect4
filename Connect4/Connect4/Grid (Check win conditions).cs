@@ -23,15 +23,15 @@ namespace Connect4
         public int IsGameOver()
         {
             int streakIndex = 0;
-            CellStreaks[,] cellStreaks = new CellStreaks[2, size];
+            CellStreaks[,] cellStreaks = new CellStreaks[2, width];
 
             // For each cell, look at the cell streaks of the cell to the left, bottom left,
             // bottom and and bottom right. If both cells are not empty and owned by the
             // same player, then use the neighbouring streak to set the streak struct of the
             // current cell.
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
                     // Clear the current cell streaks.
                     cellStreaks[streakIndex, x].horizontal = 0;
@@ -76,7 +76,7 @@ namespace Connect4
                         }
 
                         // Check negative diagonal streaks.
-                        if (x < size - 1 && y > 0
+                        if (x < width - 1 && y > 0
                             && grid[y, x] == grid[y - 1, x + 1])
                         {
                             cellStreaks[streakIndex, x].negativeDiagonal =

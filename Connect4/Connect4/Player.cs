@@ -16,7 +16,8 @@ namespace Connect4
 
         public abstract int GetMove(Grid grid);
 
-        public virtual int HighlightColumn(int startX, int columnWidht)
+        public virtual int HighlightColumn(int startX, int startY,
+            int endY, int columns)
         {
             return -1;
         }
