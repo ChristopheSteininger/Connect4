@@ -31,39 +31,39 @@ namespace Connect4
 
         public override int GetMove(Grid grid)
         {
-            int bestMove = -1;
-            if (true)//Mouse.GetState().LeftButton == ButtonState.Pressed
-                //&& oldMouseState.LeftButton == ButtonState.Released)
+            Console.Title = "Debugging output for AI player";
+            Console.SetWindowSize(84, 60);
+
+            if (printToConsole)
             {
-                if (printToConsole)
-                {
-                    totalNodesSearched = 0;
-                    endNodesSearched = 0;
-                    Console.Write("Calculating next move . . . ");
-                }
-
-                DateTime startTime = DateTime.Now;
-                root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
-                    MinimaxNode.Infinity);
-                double runtime = (DateTime.Now - startTime).TotalMilliseconds;
-
-                bestMove = root.BestMove;
-
-                PrintMoveStatistics(runtime);
+                totalNodesSearched = 0;
+                endNodesSearched = 0;
+                Console.Write("Calculating next move . . . ");
             }
+
+            // Get the best move and measure the runtime.
+            DateTime startTime = DateTime.Now;
+            root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
+                MinimaxNode.Infinity);
+            double runtime = (DateTime.Now - startTime).TotalMilliseconds;
+
+            PrintMoveStatistics(runtime);
 
             oldMouseState = Mouse.GetState();
 
-            return bestMove;
+            return root.BestMove;
         }
 
         private void PrintMoveStatistics(double runtime)
         {
             if (printToConsole)
             {
+                // Print the number of nodes looked at and the search time.
+                double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
                 Console.WriteLine("Done");
-                Console.WriteLine("{0} nodes searched, including {1} end nodes in {2} ms.",
-                    totalNodesSearched, endNodesSearched, runtime);
+                Console.WriteLine("Analysed {0} nodes, including {1} end nodes in "
+                    + "{2}ms ({3}nodes/ms).", totalNodesSearched,
+                    endNodesSearched, runtime, nodesPerMillisecond);
 
                 // Scores the scores of the child and grandchild states.
                 Console.WriteLine("Move scores (Move[Score](Grandchildren):");
@@ -100,12 +100,6 @@ namespace Connect4
 
             totalNodesSearched++;
 
-            // Evaluate the state if this is a terminal state.
-            if (depth == 0)
-            {
-                return new MinimaxNode(EvaluateState(state));
-            }
-
             int gameOverResult = state.IsGameOver();
 
             // Return the maximum value if the player won the game.
@@ -120,6 +114,12 @@ namespace Connect4
             {
                 endNodesSearched++;
                 return new MinimaxNode(-MinimaxNode.Infinity);
+            }
+
+            // Evaluate the state if this is a terminal state.
+            if (depth == 0)
+            {
+                return new MinimaxNode(EvaluateState(state));
             }
 
             // Otherwise, find the best move.

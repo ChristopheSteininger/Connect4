@@ -67,12 +67,13 @@ namespace Connect4
 
         private TileState GetTileState(int row, int column)
         {
-            if (PlayerPieceAtPosition(0, row, column))
+            ulong mask = (ulong)1 << (column + row * width);
+            if ((playerPositions[0] & mask) == mask)
             {
                 return TileState.Player1;
             }
 
-            else if (PlayerPieceAtPosition(1, row, column))
+            if ((playerPositions[1] & mask) == mask)
             {
                 return TileState.Player2;
             }
@@ -86,12 +87,6 @@ namespace Connect4
 
             ulong mask = (ulong)1 << (column + row * width);
             playerPositions[(int)state] |= mask;
-        }
-
-        private bool PlayerPieceAtPosition(int player, int row, int column)
-        {
-            ulong mask = (ulong)1 << (column + row * width);
-            return (playerPositions[player] & mask) == mask;
         }
 
         public bool IsValidMove(int column, int row)
