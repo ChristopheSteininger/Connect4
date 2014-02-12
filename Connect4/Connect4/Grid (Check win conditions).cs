@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace Connect4
 {
     partial class Grid
     {
-        private ulong[] gameOverMasks;
+        // Two arrays of masks. The first is an array of all possible streaks of 3 pieces,
+        // the second of 4 pieces.
+        private ulong[][] streakMasks;
 
         /// <summary>
         /// Returns a value indicating which player, if any, won the game.
@@ -16,6 +19,10 @@ namespace Connect4
         /// won.</returns>
         public int IsGameOver()
         {
+            // Using this variable removes one level of indirection and increases the speed
+            // by ~10%.
+            ulong[] gameOverMasks = streakMasks[1];
+
             // Each mask is a possible way to win a game. If a mask is in a player's position
             // array, then the player has won.
             for (int player = 0; player < 2; player++)
@@ -32,52 +39,61 @@ namespace Connect4
             return -1;
         }
 
+        /// <summary>
+        /// Returns the number of 3 piece streaks which the player has.
+        /// </summary>
+        /// <param name="player">The player to check</param>
+        /// <returns>The number of 3 piece streaks</returns>
+        public int GetPlayerStreaks(int player)
+        {
+            Debug.Assert(player == 0 || player == 1);
+
+            int result = 0;
+            ulong[] currentStreakMask = streakMasks[0];
+
+            for (int i = 0; i < currentStreakMask.Length; i++)
+            {
+                if ((playerPositions[player] & currentStreakMask[i]) == currentStreakMask[i])
+                {
+                    result++;
+                }
+            }
+
+            return result;
+        }
+
         private void SetGameOverMasks()
         {
-            List<ulong> masks = new List<ulong>();
+            streakMasks = new ulong[2][];
 
-            // Create the horizontal masks.
-            ulong horizontalMask = 1 + 2 + 4 + 8;
-            for (int y = 0; y < height; y++)
+            for (int length = 3; length <= 4; length++)
             {
-                for (int x = 0; x <= width - 4; x++)
-                {
-                    masks.Add(horizontalMask);
-                    horizontalMask <<= 1;
-                }
+                List<ulong> masks = new List<ulong>();
 
-                horizontalMask <<= 3;
+                AddHorizontalMasks(masks, length);
+                AddVerticalMasks(masks, length);
+                AddDiagonalMasks(masks, length);
+
+                streakMasks[length - 3] = masks.ToArray();
+            }
+        }
+
+        private void AddDiagonalMasks(List<ulong> masks, int length)
+        {
+            Debug.Assert(2 <= length && length <= 4);
+
+            ulong negativeDiagonalMask = 0;
+            ulong positiveDiagonalMask = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                negativeDiagonalMask += (ulong)1 << ((length - i - 1) + width * i);
+                positiveDiagonalMask += (ulong)1 << (i + width * i);
             }
 
-            // Create the vertical masks.
-            ulong verticalMask = 1;
-            verticalMask = (verticalMask << width) + 1;
-            verticalMask = (verticalMask << width) + 1;
-            verticalMask = (verticalMask << width) + 1;
-
-            for (int y = 0; y <= height - 4; y++)
+            for (int y = 0; y <= height - length; y++)
             {
-                for (int x = 0; x < width; x++)
-                {
-                    masks.Add(verticalMask);
-                    verticalMask <<= 1;
-                }
-            }
-
-            // Create diagonal masks.
-            ulong negativeDiagonalMask = 1 << 3;
-            negativeDiagonalMask += (ulong)1 << (2 + width);
-            negativeDiagonalMask += (ulong)1 << (1 + width * 2);
-            negativeDiagonalMask += (ulong)1 << (0 + width * 3);
-
-            ulong positiveDiagonalMask = 1;
-            positiveDiagonalMask += (ulong)1 << (1 + width);
-            positiveDiagonalMask += (ulong)1 << (2 + width * 2);
-            positiveDiagonalMask += (ulong)1 << (3 + width * 3);
-
-            for (int y = 0; y <= height - 4; y++)
-            {
-                for (int x = 0; x <= width - 4; x++)
+                for (int x = 0; x <= width - length; x++)
                 {
                     masks.Add(negativeDiagonalMask);
                     negativeDiagonalMask <<= 1;
@@ -89,8 +105,44 @@ namespace Connect4
                 negativeDiagonalMask <<= 3;
                 positiveDiagonalMask <<= 3;
             }
+        }
 
-            gameOverMasks = masks.ToArray();
+        private void AddHorizontalMasks(List<ulong> masks, int length)
+        {
+            Debug.Assert(2 <= length && length <= 4);
+
+            ulong horizontalMask = ((ulong)1 << length) - 1;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x <= width - length; x++)
+                {
+                    masks.Add(horizontalMask);
+                    horizontalMask <<= 1;
+                }
+
+                horizontalMask <<= 3;
+            }
+        }
+
+        private void AddVerticalMasks(List<ulong> masks, int length)
+        {
+            Debug.Assert(2 <= length && length <= 4);
+
+            ulong verticalMask = 1;
+
+            for (int i = 0; i < length - 1; i++)
+            {
+                verticalMask = (verticalMask << width) + 1;
+            }
+
+            for (int y = 0; y <= height - length; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    masks.Add(verticalMask);
+                    verticalMask <<= 1;
+                }
+            }
         }
     }
 }

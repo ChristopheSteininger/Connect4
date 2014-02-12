@@ -155,11 +155,7 @@ namespace Connect4
 
         private int EvaluateState(Grid state)
         {
-            // Otherwise, guess how good the state is.
-            int[] streaks = state.GetPlayerStreaks(player);
-            int heuristic = streaks[0] + 3 * streaks[1] + 5 * streaks[2];
-
-            return heuristic;
+            return state.GetPlayerStreaks(player);
         }
     }
 }

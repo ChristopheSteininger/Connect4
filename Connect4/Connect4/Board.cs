@@ -82,7 +82,8 @@ namespace Connect4
                 {
                     Color color = Color.White;
                     Color[] playerColors = { Color.Yellow, Color.Red };
-                    Color[] fadedPlayerColors = { new Color(150, 150, 0), new Color(150, 0, 0) };
+                    Color[] fadedPlayerColors = { new Color(150, 150, 0),
+                                                    new Color(150, 0, 0) };
 
                     if (grid[y, x] != TileState.Empty)
                     {

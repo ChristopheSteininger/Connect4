@@ -438,17 +438,11 @@ namespace Connect4Test
         {
             Grid grid = new Grid(width, height);
             grid = grid.Move(0, 0);
-            AssertArraysEqual(new int[] { 0, 0, 0 }, grid.GetPlayerStreaks(0));
+            Assert.AreEqual(0, grid.GetPlayerStreaks(0));
             grid = grid.Move(1, 0);
-            AssertArraysEqual(new int[] { 1, 0, 0 }, grid.GetPlayerStreaks(0));
+            Assert.AreEqual(0, grid.GetPlayerStreaks(0));
             grid = grid.Move(2, 0);
-            AssertArraysEqual(new int[] { 0, 1, 0 }, grid.GetPlayerStreaks(0));
-            grid = grid.Move(3, 0);
-            AssertArraysEqual(new int[] { 0, 0, 1 }, grid.GetPlayerStreaks(0));
-            grid = grid.Move(4, 0);
-            AssertArraysEqual(new int[] { 0, 0, 1 }, grid.GetPlayerStreaks(0));
-            grid = grid.Move(5, 0);
-            AssertArraysEqual(new int[] { 0, 0, 1 }, grid.GetPlayerStreaks(0));
+            Assert.AreEqual(1, grid.GetPlayerStreaks(0));
         }
 
         private void AssertArraysEqual(int[] expected, int[] actual)

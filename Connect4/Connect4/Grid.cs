@@ -69,7 +69,7 @@ namespace Connect4
 
             // The game over masks do not change between moves,
             // so a shallow copy is enough.
-            this.gameOverMasks = grid.gameOverMasks;
+            this.streakMasks = grid.streakMasks;
         }
 
         private TileState GetTileState(int row, int column)
@@ -105,46 +105,6 @@ namespace Connect4
         public bool IsValidMove(int column)
         {
             return 0 <= column && column < width && nextFreeTile[column] < height;
-        }
-
-        public int[] GetPlayerStreaks(int player)
-        {
-            Debug.Assert(player == 0 || player == 1);
-
-            TileState playerTile = (TileState)player;
-            int[] result = new int[3]; // Streaks of 2, 3 and > 4.
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = 0;
-            }
-
-            for (int row = 0; row < height; row++)
-            {
-                int currentStart = -1;
-                for (int column = 0; column < width; column++)
-                {
-                    // If this could be the start of a new streak.
-                    if (GetTileState(row, column) == playerTile && currentStart == -1)
-                    {
-                        currentStart = column;
-                    }
-
-                    // If this is the end of any streak.
-                    else if ((GetTileState(row, column) != playerTile || column == width - 1)
-                        && currentStart != -1)
-                    {
-                        // If the streak was longer than one tile.
-                        if (column - currentStart > 1)
-                        {
-                            result[Math.Min(column - currentStart - 2, result.Length - 1)]++;
-                        }
-
-                        currentStart = -1;
-                    }
-                }
-            }
-
-            return result;
         }
 
         public Grid Move(int column, int player)
