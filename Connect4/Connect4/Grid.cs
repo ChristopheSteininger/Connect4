@@ -48,8 +48,11 @@ namespace Connect4
             }
 
             this.playerPositions = new ulong[2] { 0, 0 };
+
+            SetGameOverMasks();
         }
 
+        // Copy constructor used by move.
         private Grid(Grid grid)
         {
             this.width = grid.width;
@@ -63,6 +66,10 @@ namespace Connect4
             {
                 this.nextFreeTile[x] = grid.nextFreeTile[x];
             }
+
+            // The game over masks do not change between moves,
+            // so a shallow copy is enough.
+            this.gameOverMasks = grid.gameOverMasks;
         }
 
         private TileState GetTileState(int row, int column)

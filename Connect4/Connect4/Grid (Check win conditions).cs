@@ -7,13 +7,7 @@ namespace Connect4
 {
     partial class Grid
     {
-        private struct CellStreaks
-        {
-            public int horizontal;
-            public int vertical;
-            public int positiveDiagonal;
-            public int negativeDiagonal;
-        }
+        private ulong[] gameOverMasks;
 
         /// <summary>
         /// Returns a value indicating which player, if any, won the game.
@@ -22,80 +16,81 @@ namespace Connect4
         /// won.</returns>
         public int IsGameOver()
         {
-            int streakIndex = 0;
-            CellStreaks[,] cellStreaks = new CellStreaks[2, width];
-
-            // For each cell, look at the cell streaks of the cell to the left, bottom left,
-            // bottom and and bottom right. If both cells are not empty and owned by the
-            // same player, then use the neighbouring streak to set the streak struct of the
-            // current cell.
-            for (int y = 0; y < height; y++)
+            // Each mask is a possible way to win a game. If a mask is in a player's position
+            // array, then the player has won.
+            for (int player = 0; player < 2; player++)
             {
-                for (int x = 0; x < width; x++)
+                for (int i = 0; i < gameOverMasks.Length; i++)
                 {
-                    // Clear the current cell streaks.
-                    cellStreaks[streakIndex, x].horizontal = 0;
-                    cellStreaks[streakIndex, x].vertical = 0;
-                    cellStreaks[streakIndex, x].positiveDiagonal = 0;
-                    cellStreaks[streakIndex, x].negativeDiagonal = 0;
-
-                    TileState currentState = GetTileState(y, x);
-
-                    if (currentState != TileState.Empty)
+                    if ((playerPositions[player] & gameOverMasks[i]) == gameOverMasks[i])
                     {
-                        // Check horizontal streaks.
-                        if (x > 0 && currentState == GetTileState(y, x - 1))
-                        {
-                            cellStreaks[streakIndex, x].horizontal =
-                                cellStreaks[streakIndex, x - 1].horizontal + 1;
-                            if (cellStreaks[streakIndex, x].horizontal == 3)
-                            {
-                                return (int)currentState;
-                            }
-                        }
-
-                        // Check vertical streaks.
-                        if (y > 0 && currentState == GetTileState(y - 1, x))
-                        {
-                            cellStreaks[streakIndex, x].vertical =
-                                cellStreaks[1 - streakIndex, x].vertical + 1;
-                            if (cellStreaks[streakIndex, x].vertical == 3)
-                            {
-                                return (int)currentState;
-                            }
-                        }
-
-                        // Check positive diagonal streaks.
-                        if (x > 0 && y > 0
-                            && currentState == GetTileState(y - 1, x - 1))
-                        {
-                            cellStreaks[streakIndex, x].positiveDiagonal =
-                                cellStreaks[1 - streakIndex, x - 1].positiveDiagonal + 1;
-                            if (cellStreaks[streakIndex, x].positiveDiagonal == 3)
-                            {
-                                return (int)currentState;
-                            }
-                        }
-
-                        // Check negative diagonal streaks.
-                        if (x < width - 1 && y > 0
-                            && currentState == GetTileState(y - 1, x + 1))
-                        {
-                            cellStreaks[streakIndex, x].negativeDiagonal =
-                                cellStreaks[1 - streakIndex, x + 1].negativeDiagonal + 1;
-                            if (cellStreaks[streakIndex, x].negativeDiagonal == 3)
-                            {
-                                return (int)currentState;
-                            }
-                        }
+                        return player;
                     }
                 }
-
-                // Swap which array is the bottom and which is current.
-                streakIndex = 1 - streakIndex;
             }
 
             return -1;
+        }
+
+        private void SetGameOverMasks()
+        {
+            List<ulong> masks = new List<ulong>();
+
+            // Create the horizontal masks.
+            ulong horizontalMask = 1 + 2 + 4 + 8;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x <= width - 4; x++)
+                {
+                    masks.Add(horizontalMask);
+                    horizontalMask <<= 1;
+                }
+
+                horizontalMask <<= 3;
+            }
+
+            // Create the vertical masks.
+            ulong verticalMask = 1;
+            verticalMask = (verticalMask << width) + 1;
+            verticalMask = (verticalMask << width) + 1;
+            verticalMask = (verticalMask << width) + 1;
+
+            for (int y = 0; y <= height - 4; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    masks.Add(verticalMask);
+                    verticalMask <<= 1;
+                }
+            }
+
+            // Create diagonal masks.
+            ulong negativeDiagonalMask = 1 << 3;
+            negativeDiagonalMask += (ulong)1 << (2 + width);
+            negativeDiagonalMask += (ulong)1 << (1 + width * 2);
+            negativeDiagonalMask += (ulong)1 << (0 + width * 3);
+
+            ulong positiveDiagonalMask = 1;
+            positiveDiagonalMask += (ulong)1 << (1 + width);
+            positiveDiagonalMask += (ulong)1 << (2 + width * 2);
+            positiveDiagonalMask += (ulong)1 << (3 + width * 3);
+
+            for (int y = 0; y <= height - 4; y++)
+            {
+                for (int x = 0; x <= width - 4; x++)
+                {
+                    masks.Add(negativeDiagonalMask);
+                    negativeDiagonalMask <<= 1;
+
+                    masks.Add(positiveDiagonalMask);
+                    positiveDiagonalMask <<= 1;
+                }
+
+                negativeDiagonalMask <<= 3;
+                positiveDiagonalMask <<= 3;
+            }
+
+            gameOverMasks = masks.ToArray();
         }
     }
 }

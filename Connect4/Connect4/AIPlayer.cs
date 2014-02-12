@@ -75,7 +75,7 @@ namespace Connect4
                         Console.ForegroundColor = ConsoleColor.Yellow;
                     }
 
-                    // Print the grandchildrne.
+                    // Print the grandchildren.
                     Console.Write("\t{0}[{1}](", child.Move, child.Score);
                     foreach (MinimaxNode grandchild in child.GetChildren())
                     {
