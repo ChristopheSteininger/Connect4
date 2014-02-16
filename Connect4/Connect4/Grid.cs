@@ -21,7 +21,7 @@ namespace Connect4
 
         private int[] nextFreeTile;
 
-        private ulong[, ,] zobristTable;
+        private ulong[][][] zobristTable;
         private ulong hash = 0;
 
         // Each ulong represents a player's pieces on the board. The first width
@@ -55,9 +55,9 @@ namespace Connect4
             SetStreakMasks();
             InitialiseZobristTable();
         }
-
-        // Copy constructor used by move.
-        private Grid(Grid grid)
+        
+        // Copy constructor used by the transition table.
+        public Grid(Grid grid)
         {
             this.width = grid.width;
             this.height = grid.height;
@@ -79,21 +79,24 @@ namespace Connect4
             this.hash = grid.hash;
         }
 
+
         private void InitialiseZobristTable()
         {
             Random random = new Random();
-            zobristTable = new ulong[height, width, 2];
+            zobristTable = new ulong[height][][];
 
             for (int y = 0; y < height; y++)
             {
+                zobristTable[y] = new ulong[width][];
                 for (int x = 0; x < width; x++)
                 {
+                    zobristTable[y][x] = new ulong[2];
                     for (int player = 0; player < 2; player++)
                     {
                         byte[] randomBytes = new byte[sizeof(ulong)];
                         random.NextBytes(randomBytes);
 
-                        zobristTable[y, x, player] =
+                        zobristTable[y][x][player] =
                             BitConverter.ToUInt64(randomBytes, 0);
                     }
                 }
@@ -124,6 +127,15 @@ namespace Connect4
             playerPositions[(int)state] |= mask;
         }
 
+        private void ClearTile(int row, int column)
+        {
+            Debug.Assert(GetTileState(row, column) != TileState.Empty);
+
+            ulong mask = ~((ulong)1 << (column + row * width));
+            playerPositions[0] &= mask;
+            playerPositions[1] &= mask;
+        }
+
         public bool IsValidMove(int column, int row)
         {
             return IsValidMove(column) && 0 <= row && row < height
@@ -135,21 +147,32 @@ namespace Connect4
             return 0 <= column && column < width && nextFreeTile[column] < height;
         }
 
-        public Grid Move(int column, int player)
+        public void Move(int column, int player)
         {
             Debug.Assert(0 <= column && column < width);
             Debug.Assert(nextFreeTile[column] < height);
 
-            Grid result = new Grid(this);
-
             // Update the hash value.
-            result.hash ^= zobristTable[nextFreeTile[column], column, player];
+            hash ^= zobristTable[nextFreeTile[column]][column][player];
 
             // Update the board.
-            result.SetTileState((TileState)player, nextFreeTile[column], column);
-            result.nextFreeTile[column]++;
+            SetTileState((TileState)player, nextFreeTile[column], column);
+            nextFreeTile[column]++;
+        }
 
-            return result;
+        public void UndoMove(int column, int player)
+        {
+            Debug.Assert(0 <= column && column < width);
+            Debug.Assert(0 < nextFreeTile[column] && nextFreeTile[column] <= height);
+            Debug.Assert(GetTileState(nextFreeTile[column] - 1, column) == (TileState)player);
+
+            nextFreeTile[column]--;
+
+            // Restore the hash value.
+            hash ^= zobristTable[nextFreeTile[column]][column][player];
+
+            // Restore the board.
+            ClearTile(nextFreeTile[column], column);
         }
 
         public override string ToString()
@@ -185,6 +208,11 @@ namespace Connect4
         public ulong GetTTableHash()
         {
             return hash;
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)(hash % int.MaxValue);
         }
 
         public override bool Equals(object obj)

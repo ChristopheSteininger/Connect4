@@ -58,9 +58,10 @@ namespace Connect4
             result = table[index];
             while (result != null)
             {
-                if (state.Equals(result.State))
+                if (result.Hash == state.GetTTableHash()
+                    && state.Equals(result.State))
                 {
-                    return true;
+                        return true;
                 }
 
                 result = result.Next;

@@ -14,8 +14,6 @@ namespace Connect4
 
         private Grid grid;
 
-        private MouseState oldMouseState;
-
         private int highlighedColumn;
         private int boardStartX;
         private int boardStartY;
@@ -45,8 +43,6 @@ namespace Connect4
         {
             PlayTurn();
 
-            oldMouseState = Mouse.GetState();
-
             base.Update(gameTime);
         }
 
@@ -63,7 +59,7 @@ namespace Connect4
 
                 if (grid.IsValidMove(move))
                 {
-                    grid = grid.Move(move, currentPlayer);
+                    grid.Move(move, currentPlayer);
 
                     currentPlayer = 1 - currentPlayer;
                     highlighedColumn = -1;

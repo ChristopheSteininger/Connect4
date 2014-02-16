@@ -71,7 +71,7 @@ namespace Connect4Test
                 {
                     for (int column = 0; column < width; column++)
                     {
-                        grid = grid.Move(column, player);
+                        grid.Move(column, player);
 
                         // Test that only the expected tiles are filled.
                         for (int testrow = 0; testrow < height; testrow++)
@@ -103,7 +103,7 @@ namespace Connect4Test
             {
                 for (int column = 0; column < width; column++)
                 {
-                    grid = grid.Move(column, currentPlayer);
+                    grid.Move(column, currentPlayer);
                     currentPlayer = 1 - currentPlayer;
 
                     // Test that only the expected tiles are filled with the correct player.
@@ -135,51 +135,51 @@ namespace Connect4Test
         public void IsGameOverHorizontalTest()
         {
             Grid grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(width - 1, 1);
+            grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 2, 1);
+            grid.Move(width - 2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 3, 1);
+            grid.Move(width - 3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 4, 1);
+            grid.Move(width - 4, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(0, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(0, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(0, grid.IsGameOver());
         }
 
@@ -190,61 +190,61 @@ namespace Connect4Test
         public void IsGameOverVerticalTest()
         {
             Grid grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(width - 1, 1);
+            grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 1, 1);
+            grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 1, 1);
+            grid.Move(width - 1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(width - 1, 1);
+            grid.Move(width - 1, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(1, grid.IsGameOver());
         }
 
@@ -255,63 +255,63 @@ namespace Connect4Test
         public void IsGameOverPositiveDiagonalTest()
         {
             Grid grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(0, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 0);
+            grid.Move(5, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 0);
+            grid.Move(5, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(1, grid.IsGameOver());
         }
 
@@ -322,111 +322,111 @@ namespace Connect4Test
         public void IsGameOverNegativeDiagonalTest()
         {
             Grid grid = new Grid(width, height);
-            grid = grid.Move(5, 1);
+            grid.Move(5, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(5, 0);
+            grid.Move(5, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 1);
+            grid.Move(0, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 1);
+            grid.Move(0, 1);
             Assert.AreEqual(1, grid.IsGameOver());
 
             grid = new Grid(width, height);
-            grid = grid.Move(0, 1);
+            grid.Move(0, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 1);
+            grid.Move(0, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 1);
+            grid.Move(3, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(2, 1);
+            grid.Move(2, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(3, 0);
+            grid.Move(3, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(4, 1);
+            grid.Move(4, 1);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(-1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(4, 0);
+            grid.Move(4, 0);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(1, 1);
+            grid.Move(1, 1);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(0, 1);
+            grid.Move(0, 1);
             Assert.AreEqual(1, grid.IsGameOver());
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(1, grid.IsGameOver());
         }
 
@@ -437,12 +437,32 @@ namespace Connect4Test
         public void GetPlayerStreaksTest()
         {
             Grid grid = new Grid(width, height);
-            grid = grid.Move(0, 0);
+            grid.Move(0, 0);
             Assert.AreEqual(0, grid.GetPlayerStreaks(0));
-            grid = grid.Move(1, 0);
+            grid.Move(1, 0);
             Assert.AreEqual(0, grid.GetPlayerStreaks(0));
-            grid = grid.Move(2, 0);
+            grid.Move(2, 0);
             Assert.AreEqual(1, grid.GetPlayerStreaks(0));
+        }
+
+        /// <summary>
+        ///A test for UndoMove
+        ///</summary>
+        [TestMethod()]
+        public void UndoMoveTest()
+        {
+            Grid referenceGrid = new Grid(width, height);
+            Grid testGrid = new Grid(width, height);
+
+            for (int move = 0; move < width; move++)
+            {
+                referenceGrid.Move(move, 0);
+                testGrid.Move(move, 0);
+                testGrid.UndoMove(move, 0);
+                testGrid.Move(move, 0);
+
+                Assert.IsTrue(testGrid.Equals(referenceGrid));
+            }
         }
 
         private void AssertArraysEqual(int[] expected, int[] actual)

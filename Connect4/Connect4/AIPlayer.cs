@@ -8,10 +8,8 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
-        private readonly int moveLookAhead = 9;
+        private readonly int moveLookAhead = 10;
         private MinimaxNode root;
-
-        private MouseState oldMouseState;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -51,89 +49,87 @@ namespace Connect4
             root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
                 MinimaxNode.Infinity);
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
-
-            PrintMoveStatistics(runtime);
-
-            oldMouseState = Mouse.GetState();
+            
+            if (printToConsole)
+            {
+                PrintMoveStatistics(runtime);
+            }
 
             return root.BestMove;
         }
 
         private void PrintMoveStatistics(double runtime)
         {
-            if (printToConsole)
+            // Print the number of nodes looked at and the search time.
+            double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
+            Console.WriteLine("Done");
+            Console.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
+                totalNodesSearched, endNodesSearched);
+            Console.WriteLine("Runtime {0} ms ({1} states / ms).", runtime,
+                nodesPerMillisecond);
+
+            if (root.BestChild.Score == MinimaxNode.Infinity)
             {
-                // Print the number of nodes looked at and the search time.
-                double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
-                Console.WriteLine("Done");
-                Console.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
-                    totalNodesSearched, endNodesSearched);
-                Console.WriteLine("Runtime {0} ms ({1} states / ms).", runtime,
-                    nodesPerMillisecond);
-
-                if (root.BestChild.Score == MinimaxNode.Infinity)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("AI win is guaranteed.");
-                    Console.ResetColor();
-                }
-
-                if (root.BestChild.Score == -MinimaxNode.Infinity)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("AI loss is guaranteed (Assuming perfect play).");
-                    Console.ResetColor();
-                }
-
-                // Print the scores of the child and grandchild states.
-                Console.WriteLine("Move scores (Move[Score](Grandchildren):");
-                foreach (MinimaxNode child in root.GetChildren())
-                {
-                    // Highlight the move taken by the computer.
-                    if (child == root.BestChild)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                    }
-
-                    // Print the grandchildren.
-                    Console.Write("\t{0}[{1}](", child.Move, child.Score);
-                    foreach (MinimaxNode grandchild in child.GetChildren())
-                    {
-                        Console.Write("{0}[{1}] ", grandchild.Move, grandchild.Score);
-                    }
-                    Console.WriteLine("\b) ");
-
-                    Console.ResetColor();
-                }
-
-                // Print transposition table statistics.
-                double standardDeviation;
-                double averageBucketSize;
-                double averageFullBucketSize;
-                int fullBuckets;
-                transpositionTable.TestUsage(out standardDeviation, out averageBucketSize,
-                    out averageFullBucketSize, out fullBuckets);
-
-                Console.WriteLine("Transposition table:");
-                Console.WriteLine("\tLookups:                  {0:N0}", tableLookups);
-                Console.WriteLine("\tRequests:                 {0:N0}",
-                    transpositionTable.Requests);
-                Console.WriteLine("\tCollisions:               {0:N0}",
-                    transpositionTable.Collisions);
-                Console.WriteLine("\tItems:                    {0:N0}",
-                    transpositionTable.Size);
-                Console.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
-                Console.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
-                Console.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
-                Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
-                transpositionTable.ResetStatistics();
-
-                Console.WriteLine("(Best opponent move is {0}).",
-                    root.BestChild.BestMove);
-
-                Console.WriteLine();
-                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("AI win is guaranteed.");
+                Console.ResetColor();
             }
+
+            if (root.BestChild.Score == -MinimaxNode.Infinity)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("AI loss is guaranteed (Assuming perfect play).");
+                Console.ResetColor();
+            }
+
+            // Print the scores of the child and grandchild states.
+            Console.WriteLine("Move scores (Move[Score](Grandchildren):");
+            foreach (MinimaxNode child in root.GetChildren())
+            {
+                // Highlight the move taken by the computer.
+                if (child == root.BestChild)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                }
+
+                // Print the grandchildren.
+                Console.Write("\t{0}[{1}](", child.Move, child.Score);
+                foreach (MinimaxNode grandchild in child.GetChildren())
+                {
+                    Console.Write("{0}[{1}] ", grandchild.Move, grandchild.Score);
+                }
+                Console.WriteLine("\b) ");
+
+                Console.ResetColor();
+            }
+
+            // Print transposition table statistics.
+            double standardDeviation;
+            double averageBucketSize;
+            double averageFullBucketSize;
+            int fullBuckets;
+            transpositionTable.TestUsage(out standardDeviation, out averageBucketSize,
+                out averageFullBucketSize, out fullBuckets);
+
+            Console.WriteLine("Transposition table:");
+            Console.WriteLine("\tLookups:                  {0:N0}", tableLookups);
+            Console.WriteLine("\tRequests:                 {0:N0}",
+                transpositionTable.Requests);
+            Console.WriteLine("\tCollisions:               {0:N0}",
+                transpositionTable.Collisions);
+            Console.WriteLine("\tItems:                    {0:N0}",
+                transpositionTable.Size);
+            Console.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
+            Console.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
+            Console.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
+            Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
+            transpositionTable.ResetStatistics();
+
+            Console.WriteLine("(Best opponent move is {0}).",
+                root.BestChild.BestMove);
+
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         private MinimaxNode Minimax(int depth, Grid state, int currentPlayer,
@@ -194,8 +190,10 @@ namespace Connect4
             {
                 if (state.IsValidMove(move))
                 {
-                    MinimaxNode child = Minimax(depth - 1, state.Move(move, currentPlayer),
-                        1 - currentPlayer, alpha, beta);
+                    state.Move(move, currentPlayer);
+                    MinimaxNode child = Minimax(depth - 1, state, 1 - currentPlayer,
+                        alpha, beta);
+                    state.UndoMove(move, currentPlayer);
                     result.AddChild(child, move);
 
                     // Update alpha and beta values.
@@ -207,7 +205,7 @@ namespace Connect4
                         if (beta <= alpha)
                         {
                             transpositionTable.Add(new TTableEntry(
-                                state, depth, beta, NodeType.Lower));
+                                new Grid(state), depth, beta, NodeType.Lower));
 
                             return result;
                         }
@@ -221,7 +219,7 @@ namespace Connect4
                         if (beta <= alpha)
                         {
                             transpositionTable.Add(new TTableEntry(
-                                state, depth, alpha, NodeType.Upper));
+                                new Grid(state), depth, alpha, NodeType.Upper));
 
                             return result;
                         }
@@ -230,7 +228,7 @@ namespace Connect4
             }
 
             transpositionTable.Add(new TTableEntry(
-                state, depth, result.Score, NodeType.Exact));
+                new Grid(state), depth, result.Score, NodeType.Exact));
 
             return result;
         }

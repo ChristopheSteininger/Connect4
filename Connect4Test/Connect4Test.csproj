@@ -100,7 +100,6 @@
   <ItemGroup>
     <Compile Include="GridTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UnitTest1.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Connect4\Connect4\Connect4.csproj">

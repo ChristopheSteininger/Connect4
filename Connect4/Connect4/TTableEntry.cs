@@ -9,29 +9,11 @@ namespace Connect4
 
     class TTableEntry
     {
-        private Grid state;
-        public Grid State
-        {
-            get { return state; }
-        }
-
-        private int depth;
-        public int Depth
-        {
-            get { return depth; }
-        }
-
-        private int score;
-        public int Score
-        {
-            get { return score; }
-        }
-
-        private NodeType nodeType;
-        public NodeType NodeType
-        {
-            get { return nodeType; }
-        }
+        public readonly Grid State;
+        public readonly int Depth;
+        public readonly ulong Hash;
+        public readonly int Score;
+        public readonly NodeType NodeType;
 
         private TTableEntry next;
         public TTableEntry Next
@@ -41,10 +23,11 @@ namespace Connect4
 
         public TTableEntry(Grid state, int depth, int score, NodeType nodeType)
         {
-            this.state = state;
-            this.depth = depth;
-            this.score = score;
-            this.nodeType = nodeType;
+            this.State = state;
+            this.Depth = depth;
+            this.Hash = state.GetTTableHash();
+            this.Score = score;
+            this.NodeType = nodeType;
             this.next = null;
         }
 
