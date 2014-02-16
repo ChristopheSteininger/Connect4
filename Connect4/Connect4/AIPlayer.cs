@@ -66,7 +66,7 @@ namespace Connect4
                 // Print the number of nodes looked at and the search time.
                 double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
                 Console.WriteLine("Done");
-                Console.WriteLine("Analysed {0} states, including {1} end states.",
+                Console.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
                     totalNodesSearched, endNodesSearched);
                 Console.WriteLine("Runtime {0} ms ({1} states / ms).", runtime,
                     nodesPerMillisecond);
@@ -81,7 +81,7 @@ namespace Connect4
                 if (root.BestChild.Score == -MinimaxNode.Infinity)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("AI loss is guaranteed.");
+                    Console.WriteLine("AI loss is guaranteed (Assuming perfect play).");
                     Console.ResetColor();
                 }
 
@@ -107,8 +107,26 @@ namespace Connect4
                 }
 
                 // Print transposition table statistics.
-                Console.WriteLine("{0} t-table look ups, {1} collisions with size {2}.",
-                    tableLookups, transpositionTable.Collisions, transpositionTable.Size);
+                double standardDeviation;
+                double averageBucketSize;
+                double averageFullBucketSize;
+                int fullBuckets;
+                transpositionTable.TestUsage(out standardDeviation, out averageBucketSize,
+                    out averageFullBucketSize, out fullBuckets);
+
+                Console.WriteLine("Transposition table:");
+                Console.WriteLine("\tLookups:                  {0:N0}", tableLookups);
+                Console.WriteLine("\tRequests:                 {0:N0}",
+                    transpositionTable.Requests);
+                Console.WriteLine("\tCollisions:               {0:N0}",
+                    transpositionTable.Collisions);
+                Console.WriteLine("\tItems:                    {0:N0}",
+                    transpositionTable.Size);
+                Console.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
+                Console.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
+                Console.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
+                Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
+                transpositionTable.ResetStatistics();
 
                 Console.WriteLine("(Best opponent move is {0}).",
                     root.BestChild.BestMove);

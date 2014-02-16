@@ -21,6 +21,9 @@ namespace Connect4
 
         private int[] nextFreeTile;
 
+        private ulong[, ,] zobristTable;
+        private ulong hash = 0;
+
         // Each ulong represents a player's pieces on the board. The first width
         // bits represent the bottom row, if the bit is 0, then the player does
         // not have a piece on that position otherwise the player does have piece
@@ -50,6 +53,7 @@ namespace Connect4
             this.playerPositions = new ulong[2] { 0, 0 };
 
             SetStreakMasks();
+            InitialiseZobristTable();
         }
 
         // Copy constructor used by move.
@@ -67,9 +71,33 @@ namespace Connect4
                 this.nextFreeTile[x] = grid.nextFreeTile[x];
             }
 
-            // The game over masks do not change between moves,
-            // so a shallow copy is enough.
+            // The game over masks and the Zobrist table do not change
+            // between moves, so a shallow copy is enough.
             this.streakMasks = grid.streakMasks;
+            this.zobristTable = grid.zobristTable;
+
+            this.hash = grid.hash;
+        }
+
+        private void InitialiseZobristTable()
+        {
+            Random random = new Random();
+            zobristTable = new ulong[height, width, 2];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    for (int player = 0; player < 2; player++)
+                    {
+                        byte[] randomBytes = new byte[sizeof(ulong)];
+                        random.NextBytes(randomBytes);
+
+                        zobristTable[y, x, player] =
+                            BitConverter.ToUInt64(randomBytes, 0);
+                    }
+                }
+            }
         }
 
         private TileState GetTileState(int row, int column)
@@ -90,7 +118,7 @@ namespace Connect4
 
         private void SetTileState(TileState state, int row, int column)
         {
-            Debug.Assert((playerPositions[0] & playerPositions[1]) == 0);
+            Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
             ulong mask = (ulong)1 << (column + row * width);
             playerPositions[(int)state] |= mask;
@@ -114,6 +142,10 @@ namespace Connect4
 
             Grid result = new Grid(this);
 
+            // Update the hash value.
+            result.hash ^= zobristTable[nextFreeTile[column], column, player];
+
+            // Update the board.
             result.SetTileState((TileState)player, nextFreeTile[column], column);
             result.nextFreeTile[column]++;
 
@@ -152,8 +184,7 @@ namespace Connect4
 
         public ulong GetTTableHash()
         {
-            ulong occupied = playerPositions[0] | playerPositions[1];
-            return ((occupied << 1) | (((ulong)1 << width) - 1)) ^ playerPositions[0];
+            return hash;
         }
 
         public override bool Equals(object obj)

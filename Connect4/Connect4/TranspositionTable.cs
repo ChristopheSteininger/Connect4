@@ -17,6 +17,12 @@ namespace Connect4
             get { return size; }
         }
 
+        private int requests = 0;
+        public int Requests
+        {
+            get { return requests; }
+        }
+
         private int collisions = 0;
         public int Collisions
         {
@@ -34,10 +40,8 @@ namespace Connect4
 
             else
             {
-                TTableEntry last;
-                for (last = table[index]; last.Next != null; last = last.Next) ;
-
-                last.LinkTo(entry);
+                entry.LinkTo(table[index]);
+                table[index] = entry;
 
                 collisions++;
             }
@@ -47,6 +51,8 @@ namespace Connect4
 
         public bool TryGet(Grid state, out TTableEntry result)
         {
+            requests++;
+
             int index = (int)(state.GetTTableHash() % tableSize);
 
             result = table[index];
@@ -61,6 +67,43 @@ namespace Connect4
             }
 
             return false;
+        }
+
+        public void ResetStatistics()
+        {
+            collisions = 0;
+            requests = 0;
+        }
+
+        public void TestUsage(out double standardDeviation, out double averageBucketSize,
+            out double averageFullBucketSize, out int fullBuckets)
+        {
+            int totalBucketSizeSquared = 0;
+
+            fullBuckets = 0;
+
+            for (int i = 0; i < tableSize; i++)
+            {
+                if (table[i] != null)
+                {
+                    fullBuckets++;
+                }
+
+                int bucketSize = 0;
+                for (TTableEntry entry = table[i]; entry != null; entry = entry.Next)
+                {
+                    bucketSize++;
+                }
+
+                totalBucketSizeSquared += bucketSize * bucketSize;
+            }
+
+            averageFullBucketSize = (double)size / fullBuckets;
+            averageBucketSize = (double)size / tableSize;
+
+            standardDeviation = Math.Sqrt(((double)totalBucketSizeSquared / tableSize)
+                - averageBucketSize * averageBucketSize);
+
         }
     }
 }
