@@ -29,6 +29,7 @@ namespace Connect4
 
             IsMouseVisible = true;
 
+            //board = new Board(7, 6, new AIPlayer(0), new HumanPlayer(1), this);
             board = new Board(7, 6, new HumanPlayer(0), new AIPlayer(1), this);
             Components.Add(board);
         }

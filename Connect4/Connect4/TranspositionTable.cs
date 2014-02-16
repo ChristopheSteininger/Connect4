@@ -31,7 +31,7 @@ namespace Connect4
 
         public void Add(TTableEntry entry)
         {
-            int index = (int)(entry.State.GetTTableHash() % tableSize);
+            int index = (int)(entry.Hash % tableSize);
 
             if (table[index] == null)
             {
@@ -58,8 +58,7 @@ namespace Connect4
             result = table[index];
             while (result != null)
             {
-                if (result.Hash == state.GetTTableHash()
-                    && state.Equals(result.State))
+                if (result.Hash == state.GetTTableHash())
                 {
                         return true;
                 }

@@ -9,8 +9,8 @@ namespace Connect4
 
     class TTableEntry
     {
-        public readonly Grid State;
         public readonly int Depth;
+        public readonly int BestMove;
         public readonly ulong Hash;
         public readonly int Score;
         public readonly NodeType NodeType;
@@ -21,11 +21,11 @@ namespace Connect4
             get { return next; }
         }
 
-        public TTableEntry(Grid state, int depth, int score, NodeType nodeType)
+        public TTableEntry(int depth, int bestMove, ulong hash, int score, NodeType nodeType)
         {
-            this.State = state;
             this.Depth = depth;
-            this.Hash = state.GetTTableHash();
+            this.BestMove = bestMove;
+            this.Hash = hash;
             this.Score = score;
             this.NodeType = nodeType;
             this.next = null;

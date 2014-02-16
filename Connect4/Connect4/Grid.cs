@@ -55,30 +55,6 @@ namespace Connect4
             SetStreakMasks();
             InitialiseZobristTable();
         }
-        
-        // Copy constructor used by the transition table.
-        public Grid(Grid grid)
-        {
-            this.width = grid.width;
-            this.height = grid.height;
-
-            this.playerPositions = new ulong[2] {
-                grid.playerPositions[0], grid.playerPositions[1] };
-
-            this.nextFreeTile = new int[width];
-            for (int x = 0; x < width; x++)
-            {
-                this.nextFreeTile[x] = grid.nextFreeTile[x];
-            }
-
-            // The game over masks and the Zobrist table do not change
-            // between moves, so a shallow copy is enough.
-            this.streakMasks = grid.streakMasks;
-            this.zobristTable = grid.zobristTable;
-
-            this.hash = grid.hash;
-        }
-
 
         private void InitialiseZobristTable()
         {

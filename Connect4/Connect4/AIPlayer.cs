@@ -8,8 +8,9 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
+        private const int infinity = 1000000;
+
         private readonly int moveLookAhead = 10;
-        private MinimaxNode root;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -44,21 +45,151 @@ namespace Connect4
                 Console.Write("Calculating next move . . . ");
             }
 
+            int bestMove = -1;
+
             // Get the best move and measure the runtime.
             DateTime startTime = DateTime.Now;
-            root = Minimax(moveLookAhead, grid, player, -MinimaxNode.Infinity,
-                MinimaxNode.Infinity);
+            int score = Minimax(moveLookAhead, grid, player, -infinity,
+                infinity, ref bestMove, true);
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             
             if (printToConsole)
             {
-                PrintMoveStatistics(runtime);
+                PrintMoveStatistics(runtime, score);
             }
 
-            return root.BestMove;
+            return bestMove;
         }
 
-        private void PrintMoveStatistics(double runtime)
+        private int Minimax(int depth, Grid state, int currentPlayer,
+            int alpha, int beta, ref int outBestMove, bool setBestMove)
+        {
+            Debug.Assert(depth >= 0);
+
+            totalNodesSearched++;
+
+            // Check if this state has already been visited.
+            TTableEntry entry;
+            if (transpositionTable.TryGet(state, out entry)
+                && entry.Depth >= depth)
+            {
+                tableLookups++;
+
+                switch (entry.NodeType)
+                {
+                    case NodeType.Exact:
+                        if (setBestMove)
+                        {
+                            outBestMove = entry.BestMove;
+                        }
+                        return entry.Score;
+                    case NodeType.Upper:
+                        beta = Math.Min(beta, entry.Score);
+                        break;
+                    case NodeType.Lower:
+                        alpha = Math.Max(alpha, entry.Score);
+                        break;
+                }
+            }
+
+            int gameOverResult = state.IsGameOver();
+
+            // Return the maximum value if the player won the game.
+            if (gameOverResult == player)
+            {
+                Debug.Assert(!setBestMove);
+
+                endNodesSearched++;
+                return infinity;
+            }
+
+            // Return the minimum value if the opposing player won the game.
+            if (gameOverResult == 1 - player)
+            {
+                Debug.Assert(!setBestMove);
+
+                endNodesSearched++;
+                return -infinity;
+            }
+
+            // Evaluate the state if this is a terminal state.
+            if (depth == 0)
+            {
+                Debug.Assert(!setBestMove);
+                
+                return EvaluateState(state);
+            }
+
+            // TODO: Use the transposition table entry even if the result
+            // is not deep enough.
+
+            // Otherwise, find the best move.
+            bool maximise = currentPlayer == player;
+            int bestMove = -1;
+            int score = (maximise ? int.MinValue : int.MaxValue);
+
+            for (int move = 0; move < state.Width; move++)
+            {
+                if (state.IsValidMove(move))
+                {
+                    state.Move(move, currentPlayer);
+                    int childScore = Minimax(depth - 1, state, 1 - currentPlayer, alpha,
+                        beta, ref bestMove, false);
+                    state.UndoMove(move, currentPlayer);
+
+                    if (maximise && childScore > score || !maximise && childScore < score)
+                    {
+                        score = childScore;
+                        bestMove = move;
+
+                        // Update alpha and beta values.
+                        if (maximise)
+                        {
+                            alpha = score;
+                        }
+                        else
+                        {
+                            beta = score;
+                        }
+
+                        // If alpha or beta cutoff.
+                        if (beta <= alpha)
+                        {
+                            NodeType type = (maximise ? NodeType.Lower : NodeType.Upper);
+
+                            transpositionTable.Add(new TTableEntry(depth, bestMove,
+                                state.GetTTableHash(), score, type));
+
+                            if (setBestMove)
+                            {
+                                outBestMove = bestMove;
+                            }
+
+                            return score;
+                        }
+                    }
+                }
+            }
+
+            Debug.Assert(bestMove != -1);
+
+            transpositionTable.Add(new TTableEntry(depth, bestMove, state.GetTTableHash(),
+                score, NodeType.Exact));
+
+            if (setBestMove)
+            {
+                outBestMove = bestMove;
+            }
+
+            return score;
+        }
+
+        private int EvaluateState(Grid state)
+        {
+            return state.GetPlayerStreaks(player);
+        }
+
+        private void PrintMoveStatistics(double runtime, int score)
         {
             // Print the number of nodes looked at and the search time.
             double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
@@ -68,38 +199,17 @@ namespace Connect4
             Console.WriteLine("Runtime {0} ms ({1} states / ms).", runtime,
                 nodesPerMillisecond);
 
-            if (root.BestChild.Score == MinimaxNode.Infinity)
+            if (score == infinity)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("AI win is guaranteed.");
                 Console.ResetColor();
             }
 
-            if (root.BestChild.Score == -MinimaxNode.Infinity)
+            if (score == -infinity)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("AI loss is guaranteed (Assuming perfect play).");
-                Console.ResetColor();
-            }
-
-            // Print the scores of the child and grandchild states.
-            Console.WriteLine("Move scores (Move[Score](Grandchildren):");
-            foreach (MinimaxNode child in root.GetChildren())
-            {
-                // Highlight the move taken by the computer.
-                if (child == root.BestChild)
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                }
-
-                // Print the grandchildren.
-                Console.Write("\t{0}[{1}](", child.Move, child.Score);
-                foreach (MinimaxNode grandchild in child.GetChildren())
-                {
-                    Console.Write("{0}[{1}] ", grandchild.Move, grandchild.Score);
-                }
-                Console.WriteLine("\b) ");
-
                 Console.ResetColor();
             }
 
@@ -125,117 +235,11 @@ namespace Connect4
             Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
             transpositionTable.ResetStatistics();
 
-            Console.WriteLine("(Best opponent move is {0}).",
-                root.BestChild.BestMove);
+            //Console.WriteLine("(Best opponent move is {0}).",
+            //    root.BestChild.BestMove);
 
             Console.WriteLine();
             Console.WriteLine();
-        }
-
-        private MinimaxNode Minimax(int depth, Grid state, int currentPlayer,
-            int alpha, int beta)
-        {
-            Debug.Assert(depth >= 0);
-
-            totalNodesSearched++;
-
-            // Check if this state has already been visited.
-            TTableEntry entry;
-            if (transpositionTable.TryGet(state, out entry)
-                && entry.Depth >= depth)
-            {
-                tableLookups++;
-
-                switch (entry.NodeType)
-                {
-                    case NodeType.Exact:
-                        return new MinimaxNode(entry.Score);
-                    case NodeType.Upper:
-                        beta = Math.Min(beta, entry.Score);
-                        break;
-                    case NodeType.Lower:
-                        alpha = Math.Max(alpha, entry.Score);
-                        break;
-                }
-            }
-
-            int gameOverResult = state.IsGameOver();
-
-            // Return the maximum value if the player won the game.
-            if (gameOverResult == player)
-            {
-                endNodesSearched++;
-                return new MinimaxNode(MinimaxNode.Infinity);
-            }
-
-            // Return the minimum value if the opposing player won the game.
-            if (gameOverResult == 1 - player)
-            {
-                endNodesSearched++;
-                return new MinimaxNode(-MinimaxNode.Infinity);
-            }
-
-            // Evaluate the state if this is a terminal state.
-            if (depth == 0)
-            {
-                return new MinimaxNode(EvaluateState(state));
-            }
-
-            // TODO: Use the transposition table entry even if the result
-            // is not deep enough.
-
-            // Otherwise, find the best move.
-            MinimaxNode result = new MinimaxNode(currentPlayer == player);
-            for (int move = 0; move < state.Width; move++)
-            {
-                if (state.IsValidMove(move))
-                {
-                    state.Move(move, currentPlayer);
-                    MinimaxNode child = Minimax(depth - 1, state, 1 - currentPlayer,
-                        alpha, beta);
-                    state.UndoMove(move, currentPlayer);
-                    result.AddChild(child, move);
-
-                    // Update alpha and beta values.
-                    if (currentPlayer == player)
-                    {
-                        alpha = result.Score;
-
-                        // Beta cutoff.
-                        if (beta <= alpha)
-                        {
-                            transpositionTable.Add(new TTableEntry(
-                                new Grid(state), depth, beta, NodeType.Lower));
-
-                            return result;
-                        }
-                    }
-
-                    else
-                    {
-                        beta = result.Score;
-
-                        // Alpha cutoff.
-                        if (beta <= alpha)
-                        {
-                            transpositionTable.Add(new TTableEntry(
-                                new Grid(state), depth, alpha, NodeType.Upper));
-
-                            return result;
-                        }
-                    }
-                }
-            }
-
-            transpositionTable.Add(new TTableEntry(
-                new Grid(state), depth, result.Score, NodeType.Exact));
-
-            return result;
-        }
-
-        private int EvaluateState(Grid state)
-        {
-            return state.GetPlayerStreaks(player);
         }
     }
 }
