@@ -451,17 +451,24 @@ namespace Connect4Test
         [TestMethod()]
         public void UndoMoveTest()
         {
-            Grid referenceGrid = new Grid(width, height);
-            Grid testGrid = new Grid(width, height);
-
-            for (int move = 0; move < width; move++)
+            for (int player = 0; player < 2; player++)
             {
-                referenceGrid.Move(move, 0);
-                testGrid.Move(move, 0);
-                testGrid.UndoMove(move, 0);
-                testGrid.Move(move, 0);
+                Grid referenceGrid = new Grid(width, height);
+                Grid testGrid = new Grid(width, height);
 
-                Assert.IsTrue(testGrid.Equals(referenceGrid));
+                for (int y = 0; y < height; y++)
+                {
+                    for (int move = 0; move < width; move++)
+                    {
+                        referenceGrid.Move(move, player);
+                        testGrid.Move(move, player);
+                        testGrid.UndoMove(move, player);
+                        testGrid.Move(move, player);
+
+                        Assert.IsTrue(testGrid.Equals(referenceGrid));
+                        Assert.Equals(testGrid.GetTTableHash(), referenceGrid.GetTTableHash());
+                    }
+                }
             }
         }
 

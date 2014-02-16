@@ -19,20 +19,37 @@ namespace Connect4
         /// won.</returns>
         public int IsGameOver()
         {
-            // Using this variable removes one level of indirection and increases the speed
-            // by ~10%.
-            ulong[] gameOverMasks = streakMasks[1];
-
             // Each mask is a possible way to win a game. If a mask is in a player's position
             // array, then the player has won.
             for (int player = 0; player < 2; player++)
             {
-                for (int i = 0; i < gameOverMasks.Length; i++)
+                for (int i = 0; i < streakMasks[1].Length; i++)
                 {
-                    if ((playerPositions[player] & gameOverMasks[i]) == gameOverMasks[i])
+                    if ((playerPositions[player] & streakMasks[1][i]) == streakMasks[1][i])
                     {
                         return player;
                     }
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Similar to IsGameOver() but only checks one player.
+        /// </summary>
+        /// <param name="player">The player to check</param>
+        /// <returns></returns>
+        public int IsGameOver(int player)
+        {
+            ulong[] gameOverMasks = streakMasks[1];
+            ulong playerPosition = playerPositions[player];
+
+            for (int i = 0; i < gameOverMasks.Length; i++)
+            {
+                if ((playerPosition & gameOverMasks[i]) == gameOverMasks[i])
+                {
+                    return player;
                 }
             }
 

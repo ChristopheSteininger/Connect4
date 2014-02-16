@@ -92,7 +92,7 @@ namespace Connect4
                 }
             }
 
-            int gameOverResult = state.IsGameOver();
+            int gameOverResult = state.IsGameOver(1 - currentPlayer);
 
             // Return the maximum value if the player won the game.
             if (gameOverResult == player)
@@ -196,7 +196,7 @@ namespace Connect4
             Console.WriteLine("Done");
             Console.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
                 totalNodesSearched, endNodesSearched);
-            Console.WriteLine("Runtime {0} ms ({1} states / ms).", runtime,
+            Console.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
                 nodesPerMillisecond);
 
             if (score == infinity)
