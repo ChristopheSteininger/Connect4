@@ -62,7 +62,7 @@ namespace Connect4
             return result;
         }
 
-        private void SetGameOverMasks()
+        private void SetStreakMasks()
         {
             streakMasks = new ulong[2][];
 

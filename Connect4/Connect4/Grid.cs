@@ -49,7 +49,7 @@ namespace Connect4
 
             this.playerPositions = new ulong[2] { 0, 0 };
 
-            SetGameOverMasks();
+            SetStreakMasks();
         }
 
         // Copy constructor used by move.
@@ -90,7 +90,7 @@ namespace Connect4
 
         private void SetTileState(TileState state, int row, int column)
         {
-            Debug.Assert(GetTileState(row, column) == TileState.Empty);
+            Debug.Assert((playerPositions[0] & playerPositions[1]) == 0);
 
             ulong mask = (ulong)1 << (column + row * width);
             playerPositions[(int)state] |= mask;
@@ -148,6 +148,25 @@ namespace Connect4
             }
 
             return result;
+        }
+
+        public ulong GetTTableHash()
+        {
+            ulong occupied = playerPositions[0] | playerPositions[1];
+            return ((occupied << 1) | (((ulong)1 << width) - 1)) ^ playerPositions[0];
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            Grid other = (Grid)obj;
+            return width == other.width && height == other.height
+                && playerPositions[0] == other.playerPositions[0]
+                && playerPositions[1] == other.playerPositions[1];
         }
     }
 }

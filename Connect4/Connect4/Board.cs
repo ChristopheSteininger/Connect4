@@ -64,7 +64,9 @@ namespace Connect4
                 if (grid.IsValidMove(move))
                 {
                     grid = grid.Move(move, currentPlayer);
+
                     currentPlayer = 1 - currentPlayer;
+                    highlighedColumn = -1;
                 }
             }
         }
