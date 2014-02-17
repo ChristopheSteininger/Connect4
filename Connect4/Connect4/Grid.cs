@@ -134,6 +134,8 @@ namespace Connect4
             // Update the board.
             SetTileState((TileState)player, nextFreeTile[column], column);
             nextFreeTile[column]++;
+
+            lastMove = column;
         }
 
         public void UndoMove(int column, int player)
@@ -149,6 +151,8 @@ namespace Connect4
 
             // Restore the board.
             ClearTile(nextFreeTile[column], column);
+
+            lastMove = -1;
         }
 
         public override string ToString()

@@ -10,7 +10,7 @@ namespace Connect4
     {
         private const int infinity = 1000000;
 
-        private readonly int moveLookAhead = 10;
+        private readonly int moveLookAhead = 13;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -46,11 +46,15 @@ namespace Connect4
             }
 
             int bestMove = -1;
+            int score = -1;
 
             // Get the best move and measure the runtime.
             DateTime startTime = DateTime.Now;
-            int score = Minimax(moveLookAhead, grid, player, -infinity,
-                infinity, ref bestMove, true);
+            for (int depth = 1; depth < moveLookAhead; depth++)
+            {
+                score = Minimax(depth, grid, player, -infinity,
+                    infinity, ref bestMove, true);
+            }
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             
             if (printToConsole)
@@ -116,8 +120,8 @@ namespace Connect4
             if (depth == 0)
             {
                 Debug.Assert(!setBestMove);
-                
-                return EvaluateState(state);
+
+                return state.GetPlayerStreaks(player);
             }
 
             // TODO: Use the transposition table entry even if the result
@@ -184,11 +188,6 @@ namespace Connect4
             return score;
         }
 
-        private int EvaluateState(Grid state)
-        {
-            return state.GetPlayerStreaks(player);
-        }
-
         private void PrintMoveStatistics(double runtime, int score)
         {
             // Print the number of nodes looked at and the search time.
@@ -234,9 +233,6 @@ namespace Connect4
             Console.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
             Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
             transpositionTable.ResetStatistics();
-
-            //Console.WriteLine("(Best opponent move is {0}).",
-            //    root.BestChild.BestMove);
 
             Console.WriteLine();
             Console.WriteLine();

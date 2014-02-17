@@ -12,6 +12,10 @@ namespace Connect4
         // the second of 4 pieces.
         private ulong[][] streakMasks;
 
+        private List<ulong>[,,] gameOverMasks;
+
+        private int lastMove = -1;
+
         /// <summary>
         /// Returns a value indicating which player, if any, won the game.
         /// </summary>
@@ -36,18 +40,24 @@ namespace Connect4
         }
 
         /// <summary>
-        /// Similar to IsGameOver() but only checks one player.
+        /// Similar to IsGameOver() but only checks one player and if the last move is part
+        /// of the winning streak.
         /// </summary>
         /// <param name="player">The player to check</param>
         /// <returns></returns>
         public int IsGameOver(int player)
         {
-            ulong[] gameOverMasks = streakMasks[1];
+            if (lastMove == -1)
+            {
+                return -1;
+            }
+
+            List<ulong> masks = gameOverMasks[1, nextFreeTile[lastMove] - 1, lastMove];
             ulong playerPosition = playerPositions[player];
 
-            for (int i = 0; i < gameOverMasks.Length; i++)
+            for (int i = 0; i < masks.Count; i++)
             {
-                if ((playerPosition & gameOverMasks[i]) == gameOverMasks[i])
+                if ((playerPosition & masks[i]) == masks[i])
                 {
                     return player;
                 }
@@ -81,8 +91,19 @@ namespace Connect4
 
         private void SetStreakMasks()
         {
-            streakMasks = new ulong[2][];
+            gameOverMasks = new List<ulong>[2, height, width];
+            for (int i = 0; i < 2; i++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        gameOverMasks[i, y, x] = new List<ulong>();
+                    }
+                }
+            }
 
+            streakMasks = new ulong[2][];
             for (int length = 3; length <= 4; length++)
             {
                 List<ulong> masks = new List<ulong>();
@@ -97,7 +118,7 @@ namespace Connect4
 
         private void AddDiagonalMasks(List<ulong> masks, int length)
         {
-            Debug.Assert(2 <= length && length <= 4);
+            Debug.Assert(3 <= length && length <= 4);
 
             ulong negativeDiagonalMask = 0;
             ulong positiveDiagonalMask = 0;
@@ -113,9 +134,14 @@ namespace Connect4
                 for (int x = 0; x <= width - length; x++)
                 {
                     masks.Add(negativeDiagonalMask);
-                    negativeDiagonalMask <<= 1;
-
                     masks.Add(positiveDiagonalMask);
+                    for (int i = 0; i < length; i++)
+                    {
+                        gameOverMasks[length - 3, y + i, x + i].Add(positiveDiagonalMask);
+                        gameOverMasks[length - 3, y + i, x + length - 1 - i].Add(negativeDiagonalMask);
+                    }
+
+                    negativeDiagonalMask <<= 1;
                     positiveDiagonalMask <<= 1;
                 }
 
@@ -126,7 +152,7 @@ namespace Connect4
 
         private void AddHorizontalMasks(List<ulong> masks, int length)
         {
-            Debug.Assert(2 <= length && length <= 4);
+            Debug.Assert(3 <= length && length <= 4);
 
             ulong horizontalMask = ((ulong)1 << length) - 1;
             for (int y = 0; y < height; y++)
@@ -134,6 +160,11 @@ namespace Connect4
                 for (int x = 0; x <= width - length; x++)
                 {
                     masks.Add(horizontalMask);
+                    for (int i = 0; i < length; i++)
+                    {
+                        gameOverMasks[length - 3, y, x + i].Add(horizontalMask);
+                    }
+
                     horizontalMask <<= 1;
                 }
 
@@ -143,7 +174,7 @@ namespace Connect4
 
         private void AddVerticalMasks(List<ulong> masks, int length)
         {
-            Debug.Assert(2 <= length && length <= 4);
+            Debug.Assert(3 <= length && length <= 4);
 
             ulong verticalMask = 1;
 
@@ -157,6 +188,11 @@ namespace Connect4
                 for (int x = 0; x < width; x++)
                 {
                     masks.Add(verticalMask);
+                    for (int i = 0; i < length; i++)
+                    {
+                        gameOverMasks[length - 3, y + i, x].Add(verticalMask);
+                    }
+
                     verticalMask <<= 1;
                 }
             }
