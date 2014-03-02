@@ -118,6 +118,39 @@ namespace Connect4
                 && nextFreeTile[column] == row;
         }
 
+        public unsafe int[] GetValidMoves()
+        {
+            // Get the top row of the grid.
+            ulong empty = (playerPositions[0] | playerPositions[1]) >> (width * (height - 1));
+            //empty = 22;
+            uint emptyTopSquares = (uint)(empty ^ (((ulong)1 << width) - 1));
+
+            // Count the number of bits set in fullTopSquares, which is the number of
+            // valid moves.
+            // From: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel.
+            uint temp = emptyTopSquares;
+            temp = temp - ((temp >> 1) & 0x55555555);
+            temp = (temp & 0x33333333) + ((temp >> 2) & 0x33333333);
+            uint count = ((temp + (temp >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
+
+            int[] validMoves = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                // Count the number of trailing zeros which gives the smallest valid move.
+                // From: http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightFloatCast.
+                float f = (float)(emptyTopSquares & -emptyTopSquares);
+                int nextValidMove = (int)((*(uint *)&f >> 23) - 0x7f);
+                nextValidMove = (nextValidMove == -127) ? 0 : nextValidMove;
+
+                validMoves[i] = nextValidMove;
+
+                // Clear the current valid move.
+                emptyTopSquares &= ~((uint)1 << nextValidMove);
+            }
+
+            return validMoves;
+        }
+
         public bool IsValidMove(int column)
         {
             return 0 <= column && column < width && nextFreeTile[column] < height;

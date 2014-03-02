@@ -45,11 +45,11 @@ namespace Connect4
         /// </summary>
         /// <param name="player">The player to check</param>
         /// <returns></returns>
-        public int IsGameOver(int player)
+        public bool IsGameOver(int player)
         {
             if (lastMove == -1)
             {
-                return -1;
+                return false;
             }
 
             List<ulong> masks = gameOverMasks[1, nextFreeTile[lastMove] - 1, lastMove];
@@ -59,11 +59,11 @@ namespace Connect4
             {
                 if ((playerPosition & masks[i]) == masks[i])
                 {
-                    return player;
+                    return true;
                 }
             }
 
-            return -1;
+            return false;
         }
 
         /// <summary>

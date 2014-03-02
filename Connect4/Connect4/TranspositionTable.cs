@@ -17,6 +17,12 @@ namespace Connect4
             get { return size; }
         }
 
+        private int insertions = 0;
+        public int Insertions
+        {
+            get { return insertions; }
+        }
+
         private int requests = 0;
         public int Requests
         {
@@ -35,18 +41,24 @@ namespace Connect4
 
             if (table[index] == null)
             {
-                table[index] = entry;
+                size++;
             }
 
-            else
-            {
-                entry.LinkTo(table[index]);
-                table[index] = entry;
+            table[index] = entry;
+            //if (table[index] == null)
+            //{
+            //    table[index] = entry;
+            //}
 
-                collisions++;
-            }
+            //else
+            //{
+            //    entry.LinkTo(table[index]);
+            //    table[index] = entry;
 
-            size++;
+            //    collisions++;
+            //}
+
+            insertions++;
         }
 
         public bool TryGet(Grid state, out TTableEntry result)
@@ -55,24 +67,28 @@ namespace Connect4
 
             int index = (int)(state.GetTTableHash() % tableSize);
 
+            //result = table[index];
+            //while (result != null)
+            //{
+            //    if (result.Hash == state.GetTTableHash())
+            //    {
+            //            return true;
+            //    }
+
+            //    result = result.Next;
+            //}
+
+            //return false;
+
             result = table[index];
-            while (result != null)
-            {
-                if (result.Hash == state.GetTTableHash())
-                {
-                        return true;
-                }
-
-                result = result.Next;
-            }
-
-            return false;
+            return result != null && result.Hash == state.GetTTableHash();
         }
 
         public void ResetStatistics()
         {
-            collisions = 0;
+            insertions = 0;
             requests = 0;
+            collisions = 0;
         }
 
         public void TestUsage(out double standardDeviation, out double averageBucketSize,

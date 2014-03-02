@@ -21,7 +21,8 @@ namespace Connect4
             get { return next; }
         }
 
-        public TTableEntry(int depth, int bestMove, ulong hash, int score, NodeType nodeType)
+        public TTableEntry(int depth, int bestMove, ulong hash, int score, 
+            NodeType nodeType)
         {
             this.Depth = depth;
             this.BestMove = bestMove;
