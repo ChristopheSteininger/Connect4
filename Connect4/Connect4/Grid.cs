@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Connect4
 {
@@ -118,12 +119,16 @@ namespace Connect4
                 && nextFreeTile[column] == row;
         }
 
-        public unsafe int[] GetValidMoves()
+        /// <summary>
+        /// Returns the valid moves and the index of each move.
+        /// </summary>
+        /// <returns>Two arrays, the first is the list of valid moves, the second
+        /// is the index of each move.</returns>
+        public unsafe int[][] GetValidMoves()
         {
             // Get the top row of the grid.
-            ulong empty = (playerPositions[0] | playerPositions[1]) >> (width * (height - 1));
-            //empty = 22;
-            uint emptyTopSquares = (uint)(empty ^ (((ulong)1 << width) - 1));
+            ulong fullTopSquares = (playerPositions[0] | playerPositions[1]) >> (width * (height - 1));
+            uint emptyTopSquares = (uint)(fullTopSquares ^ (((ulong)1 << width) - 1));
 
             // Count the number of bits set in fullTopSquares, which is the number of
             // valid moves.
@@ -133,7 +138,9 @@ namespace Connect4
             temp = (temp & 0x33333333) + ((temp >> 2) & 0x33333333);
             uint count = ((temp + (temp >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
 
-            int[] validMoves = new int[count];
+            int[][] validMoves = new int[2][];
+            validMoves[0] = new int[count];
+            validMoves[1] = new int[width];
             for (int i = 0; i < count; i++)
             {
                 // Count the number of trailing zeros which gives the smallest valid move.
@@ -142,13 +149,36 @@ namespace Connect4
                 int nextValidMove = (int)((*(uint *)&f >> 23) - 0x7f);
                 nextValidMove = (nextValidMove == -127) ? 0 : nextValidMove;
 
-                validMoves[i] = nextValidMove;
+                validMoves[0][i] = nextValidMove;
+                validMoves[1][nextValidMove] = i;
 
                 // Clear the current valid move.
                 emptyTopSquares &= ~((uint)1 << nextValidMove);
             }
 
             return validMoves;
+        }
+
+        public int[][] GetValidMoves2()
+        {
+            List<int> validMoves = new List<int>();
+            int[] indexes = new int[width];
+
+            int index = 0;
+            for (int i = 0; i < width; i++)
+            {
+                if (IsValidMove(i))
+                {
+                    validMoves.Add(i);
+                    indexes[i] = index++;
+                }
+            }
+
+            int[][] result = new int[2][];
+            result[0] = validMoves.ToArray();
+            result[1] = indexes;
+
+            return result;
         }
 
         public bool IsValidMove(int column)
@@ -169,6 +199,9 @@ namespace Connect4
             nextFreeTile[column]++;
 
             lastMove = column;
+
+            // Update the 3 piece streak count.
+            LazyUpdatePlayerStreaks(player, column, true);
         }
 
         public void UndoMove(int column, int player)
@@ -177,15 +210,18 @@ namespace Connect4
             Debug.Assert(0 < nextFreeTile[column] && nextFreeTile[column] <= height);
             Debug.Assert(GetTileState(nextFreeTile[column] - 1, column) == (TileState)player);
 
-            nextFreeTile[column]--;
+            // Update the 3 piece streak count.
+            LazyUpdatePlayerStreaks(player, column, false);
 
-            // Restore the hash value.
-            hash ^= zobristTable[nextFreeTile[column]][column][player];
+            lastMove = -1;
+
+            nextFreeTile[column]--;
 
             // Restore the board.
             ClearTile(nextFreeTile[column], column);
 
-            lastMove = -1;
+            // Restore the hash value.
+            hash ^= zobristTable[nextFreeTile[column]][column][player];
         }
 
         public override string ToString()

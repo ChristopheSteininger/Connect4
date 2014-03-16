@@ -12,9 +12,20 @@ namespace Connect4
         // the second of 4 pieces.
         private ulong[][] streakMasks;
 
-        private List<ulong>[,,] gameOverMasks;
+        private List<ulong>[,,] lazyMasks;
 
         private int lastMove = -1;
+
+        private int[] streakCount = new int[2] { 0, 0 };
+        public int[] StreakCount
+        {
+            get { return streakCount; }
+        }
+
+        public void ClearMoveHistory()
+        {
+            lastMove = -1;
+        }
 
         /// <summary>
         /// Returns a value indicating which player, if any, won the game.
@@ -44,15 +55,15 @@ namespace Connect4
         /// of the winning streak.
         /// </summary>
         /// <param name="player">The player to check</param>
-        /// <returns></returns>
-        public bool IsGameOver(int player)
+        /// <returns>True if the last move was a winning move for the player.</returns>
+        public bool LazyIsGameOver(int player)
         {
             if (lastMove == -1)
             {
                 return false;
             }
 
-            List<ulong> masks = gameOverMasks[1, nextFreeTile[lastMove] - 1, lastMove];
+            List<ulong> masks = lazyMasks[1, nextFreeTile[lastMove] - 1, lastMove];
             ulong playerPosition = playerPositions[player];
 
             for (int i = 0; i < masks.Count; i++)
@@ -89,16 +100,42 @@ namespace Connect4
             return result;
         }
 
+        private void LazyUpdatePlayerStreaks(int player, int move, bool increase)
+        {
+            Debug.Assert(player == 0 || player == 1);
+
+            int result = 0;
+            List<ulong> masks = lazyMasks[0, nextFreeTile[move] - 1, move];
+            ulong playerPosition = playerPositions[player];
+
+            foreach (ulong mask in masks)
+            {
+                if ((playerPosition & mask) == mask)
+                {
+                    result++;
+                }
+            }
+
+            if (increase)
+            {
+                streakCount[player] += result;
+            }
+            else
+            {
+                streakCount[player] -= result;
+            }
+        }
+
         private void SetStreakMasks()
         {
-            gameOverMasks = new List<ulong>[2, height, width];
+            lazyMasks = new List<ulong>[2, height, width];
             for (int i = 0; i < 2; i++)
             {
                 for (int y = 0; y < height; y++)
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        gameOverMasks[i, y, x] = new List<ulong>();
+                        lazyMasks[i, y, x] = new List<ulong>();
                     }
                 }
             }
@@ -137,16 +174,16 @@ namespace Connect4
                     masks.Add(positiveDiagonalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        gameOverMasks[length - 3, y + i, x + i].Add(positiveDiagonalMask);
-                        gameOverMasks[length - 3, y + i, x + length - 1 - i].Add(negativeDiagonalMask);
+                        lazyMasks[length - 3, y + i, x + i].Add(positiveDiagonalMask);
+                        lazyMasks[length - 3, y + i, x + length - 1 - i].Add(negativeDiagonalMask);
                     }
 
                     negativeDiagonalMask <<= 1;
                     positiveDiagonalMask <<= 1;
                 }
 
-                negativeDiagonalMask <<= 3;
-                positiveDiagonalMask <<= 3;
+                negativeDiagonalMask <<= length - 1;
+                positiveDiagonalMask <<= length - 1;
             }
         }
 
@@ -162,13 +199,13 @@ namespace Connect4
                     masks.Add(horizontalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        gameOverMasks[length - 3, y, x + i].Add(horizontalMask);
+                        lazyMasks[length - 3, y, x + i].Add(horizontalMask);
                     }
 
                     horizontalMask <<= 1;
                 }
 
-                horizontalMask <<= 3;
+                horizontalMask <<= length - 1;
             }
         }
 
@@ -190,7 +227,7 @@ namespace Connect4
                     masks.Add(verticalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        gameOverMasks[length - 3, y + i, x].Add(verticalMask);
+                        lazyMasks[length - 3, y + i, x].Add(verticalMask);
                     }
 
                     verticalMask <<= 1;

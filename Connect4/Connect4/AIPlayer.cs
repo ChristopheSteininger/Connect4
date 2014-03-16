@@ -10,7 +10,7 @@ namespace Connect4
     {
         private const int infinity = 1000000;
 
-        private readonly int moveLookAhead = 13;
+        private readonly int moveLookAhead = 15;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -65,6 +65,7 @@ namespace Connect4
             {
                 score = Minimax(depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
+                grid.ClearMoveHistory();
             }
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             totalRuntime += runtime;
@@ -84,15 +85,13 @@ namespace Connect4
 
             totalNodesSearched++;
 
-            bool gameOverResult = state.IsGameOver(1 - currentPlayer);
-
-            // FIX THIS: The return values are different for the lazy is game over.
-            if (gameOverResult)
+            if (state.LazyIsGameOver(1 - currentPlayer))
             {
                 Debug.Assert(!setBestMove);
                 endNodesSearched++;
 
-                // Return the maximum value if the player won the game.
+                // Return the maximum value if the player won the game
+                // on the last move.
                 if (currentPlayer != player)
                 {
                     return infinity;
@@ -107,10 +106,12 @@ namespace Connect4
             {
                 Debug.Assert(!setBestMove);
 
-                return state.GetPlayerStreaks(player);
+                // TODO: Do not update streak count for the human player
+                // as it is never used.
+                return state.StreakCount[player];
             }
 
-            int[] validMoves = state.GetValidMoves();
+            int[][] validMoves = state.GetValidMoves();
 
             // If there are no valid moves, then this is a draw.
             if (validMoves.Length == 0)
@@ -170,41 +171,34 @@ namespace Connect4
                 {
                     shallowTableLookups++;
 
-                    // Find the index of entry.BestMove in the validMoves array.
-                    for (int i = 0; i < validMoves.Length; i++)
-                    {
-                        if (validMoves[i] == entry.BestMove)
-                        {
-                            int temp = validMoves[0];
-                            validMoves[0] = entry.BestMove;
-                            validMoves[i] = temp;
+                    // Swap the first move and the best move from the entry.
+                    int bestMoveIndex = validMoves[1][entry.BestMove];
+                    int temp = validMoves[0][0];
+                    validMoves[0][0] = entry.BestMove;
+                    validMoves[0][bestMoveIndex] = temp;
+                    validMoves[1][0] = bestMoveIndex;
+                    validMoves[1][bestMoveIndex] = 0;
 
-                            break;
-                        }
-                    }
-
-                    Debug.Assert(validMoves[0] == entry.BestMove);
+                    Debug.Assert(validMoves[0][0] == entry.BestMove);
                 }
             }
-
-            // TODO: Use the transposition table entry even if the result
-            // is not deep enough.
 
             // Otherwise, find the best move.
             bool maximise = currentPlayer == player;
             int bestMove = -1;
-            int score = (maximise ? int.MinValue : int.MaxValue);
+            int dummy = 0;
+            int score = (maximise) ? int.MinValue : int.MaxValue;
 
-            for (int i = 0; i < validMoves.Length; i++)
+            for (int i = 0; i < validMoves[0].Length; i++)
             {
-                int move = validMoves[i];
+                int move = validMoves[0][i];
 
                 state.Move(move, currentPlayer);
                 int childScore = Minimax(depth - 1, state, 1 - currentPlayer, alpha,
-                    beta, ref bestMove, false);
+                    beta, ref dummy, false);
                 state.UndoMove(move, currentPlayer);
 
-                if (maximise && childScore > score || !maximise && childScore < score)
+                if ((maximise && childScore > score) || (!maximise && childScore < score))
                 {
                     score = childScore;
                     bestMove = move;
@@ -226,7 +220,7 @@ namespace Connect4
                         //Debug.Assert(!setBestMove);
                         alphaBetaCuttoffs++;
 
-                        NodeType type = (maximise ? NodeType.Lower : NodeType.Upper);
+                        NodeType type = (maximise) ? NodeType.Lower : NodeType.Upper;
 
                         transpositionTable.Add(new TTableEntry(depth, bestMove,
                             state.GetTTableHash(), score, type));

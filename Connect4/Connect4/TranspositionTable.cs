@@ -7,7 +7,7 @@ namespace Connect4
 {
     class TranspositionTable
     {
-        private const int tableSize = 500009;
+        private const int tableSize = 1000009;
 
         private TTableEntry[] table = new TTableEntry[tableSize];
 
@@ -42,21 +42,16 @@ namespace Connect4
             if (table[index] == null)
             {
                 size++;
+
+                table[index] = entry;
             }
 
-            table[index] = entry;
-            //if (table[index] == null)
-            //{
-            //    table[index] = entry;
-            //}
+            else if (table[index].Depth < entry.Depth)
+            {
+                table[index] = entry;
 
-            //else
-            //{
-            //    entry.LinkTo(table[index]);
-            //    table[index] = entry;
-
-            //    collisions++;
-            //}
+                collisions++;
+            }
 
             insertions++;
         }
@@ -66,19 +61,6 @@ namespace Connect4
             requests++;
 
             int index = (int)(state.GetTTableHash() % tableSize);
-
-            //result = table[index];
-            //while (result != null)
-            //{
-            //    if (result.Hash == state.GetTTableHash())
-            //    {
-            //            return true;
-            //    }
-
-            //    result = result.Next;
-            //}
-
-            //return false;
 
             result = table[index];
             return result != null && result.Hash == state.GetTTableHash();
