@@ -12,7 +12,9 @@ namespace Connect4
         // the second of 4 pieces.
         private ulong[][] streakMasks;
 
-        private List<ulong>[,,] lazyMasks;
+        // Two arrays of masks used by the lazy evaluation and game over functions as above,
+        // but each array points to a table of masks at each position of the board.
+        private ulong[][][][] lazyMasks;
 
         private int lastMove = -1;
 
@@ -71,10 +73,10 @@ namespace Connect4
                 return false;
             }
 
-            List<ulong> masks = lazyMasks[1, nextFreeTile[lastMove] - 1, lastMove];
+            ulong[] masks = lazyMasks[1][nextFreeTile[lastMove] - 1][lastMove];
             ulong playerPosition = playerPositions[player];
 
-            for (int i = 0; i < masks.Count; i++)
+            for (int i = 0; i < masks.Length; i++)
             {
                 if ((playerPosition & masks[i]) == masks[i])
                 {
@@ -118,12 +120,12 @@ namespace Connect4
             }
 
             int result = 0;
-            List<ulong> masks = lazyMasks[0, nextFreeTile[move] - 1, move];
+            ulong[] masks = lazyMasks[0][nextFreeTile[move] - 1][move];
             ulong playerPosition = playerPositions[player];
 
-            foreach (ulong mask in masks)
+            for (int i = 0; i < masks.Length; i++)
             {
-                if ((playerPosition & mask) == mask)
+                if ((playerPosition & masks[i]) == masks[i])
                 {
                     result++;
                 }
@@ -141,32 +143,51 @@ namespace Connect4
 
         private void SetStreakMasks()
         {
-            lazyMasks = new List<ulong>[2, height, width];
+            // Allocate the temporary lazy masks.
+            List<ulong>[, ,] tempLazyMasks = new List<ulong>[2, height, width];
             for (int i = 0; i < 2; i++)
             {
                 for (int y = 0; y < height; y++)
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        lazyMasks[i, y, x] = new List<ulong>();
+                        tempLazyMasks[i, y, x] = new List<ulong>();
                     }
                 }
             }
 
+            // Calculate the masks and store the results in the lists.
             streakMasks = new ulong[2][];
+            List<ulong> tempMasks = new List<ulong>();
             for (int length = 3; length <= 4; length++)
             {
-                List<ulong> masks = new List<ulong>();
+                tempMasks.Clear();
 
-                AddHorizontalMasks(masks, length);
-                AddVerticalMasks(masks, length);
-                AddDiagonalMasks(masks, length);
+                AddHorizontalMasks(tempMasks, tempLazyMasks, length);
+                AddVerticalMasks(tempMasks, tempLazyMasks, length);
+                AddDiagonalMasks(tempMasks, tempLazyMasks, length);
 
-                streakMasks[length - 3] = masks.ToArray();
+                streakMasks[length - 3] = tempMasks.ToArray();
+            }
+
+            // Allocate the lazy masks array.
+            lazyMasks = new ulong[2][][][];
+            for (int i = 0; i < 2; i++)
+            {
+                lazyMasks[i] = new ulong[height][][];
+                for (int y = 0; y < height; y++)
+                {
+                    lazyMasks[i][y] = new ulong[width][];
+                    for (int x = 0; x < width; x++)
+                    {
+                        lazyMasks[i][y][x] = tempLazyMasks[i, y, x].ToArray();
+                    }
+                }
             }
         }
 
-        private void AddDiagonalMasks(List<ulong> masks, int length)
+        private void AddDiagonalMasks(List<ulong> tempMasks,
+            List<ulong>[, ,] tempLazyMasks, int length)
         {
             Debug.Assert(3 <= length && length <= 4);
 
@@ -183,12 +204,14 @@ namespace Connect4
             {
                 for (int x = 0; x <= width - length; x++)
                 {
-                    masks.Add(negativeDiagonalMask);
-                    masks.Add(positiveDiagonalMask);
+                    tempMasks.Add(negativeDiagonalMask);
+                    tempMasks.Add(positiveDiagonalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        lazyMasks[length - 3, y + i, x + i].Add(positiveDiagonalMask);
-                        lazyMasks[length - 3, y + i, x + length - 1 - i].Add(negativeDiagonalMask);
+                        tempLazyMasks[length - 3, y + i, x + i].Add(
+                            positiveDiagonalMask);
+                        tempLazyMasks[length - 3, y + i, x + length - 1 - i].Add(
+                            negativeDiagonalMask);
                     }
 
                     negativeDiagonalMask <<= 1;
@@ -200,7 +223,8 @@ namespace Connect4
             }
         }
 
-        private void AddHorizontalMasks(List<ulong> masks, int length)
+        private void AddHorizontalMasks(List<ulong> tempMasks,
+            List<ulong>[, ,] tempLazyMasks, int length)
         {
             Debug.Assert(3 <= length && length <= 4);
 
@@ -209,10 +233,10 @@ namespace Connect4
             {
                 for (int x = 0; x <= width - length; x++)
                 {
-                    masks.Add(horizontalMask);
+                    tempMasks.Add(horizontalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        lazyMasks[length - 3, y, x + i].Add(horizontalMask);
+                        tempLazyMasks[length - 3, y, x + i].Add(horizontalMask);
                     }
 
                     horizontalMask <<= 1;
@@ -222,7 +246,8 @@ namespace Connect4
             }
         }
 
-        private void AddVerticalMasks(List<ulong> masks, int length)
+        private void AddVerticalMasks(List<ulong> tempMasks,
+            List<ulong>[, ,] tempLazyMasks, int length)
         {
             Debug.Assert(3 <= length && length <= 4);
 
@@ -237,10 +262,10 @@ namespace Connect4
             {
                 for (int x = 0; x < width; x++)
                 {
-                    masks.Add(verticalMask);
+                    tempMasks.Add(verticalMask);
                     for (int i = 0; i < length; i++)
                     {
-                        lazyMasks[length - 3, y + i, x].Add(verticalMask);
+                        tempLazyMasks[length - 3, y + i, x].Add(verticalMask);
                     }
 
                     verticalMask <<= 1;
