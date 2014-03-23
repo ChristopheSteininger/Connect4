@@ -124,7 +124,7 @@ namespace Connect4
         /// </summary>
         /// <returns>Two arrays, the first is the list of valid moves, the second
         /// is the index of each move.</returns>
-        public unsafe int[][] GetValidMoves()
+        public int[][] GetValidMoves()
         {
             // Get the top row of the grid.
             ulong fullTopSquares = (playerPositions[0] | playerPositions[1]) >> (width * (height - 1));
@@ -141,19 +141,22 @@ namespace Connect4
             int[][] validMoves = new int[2][];
             validMoves[0] = new int[count];
             validMoves[1] = new int[width];
+            int nextValidMove = 0;
+
             for (int i = 0; i < count; i++)
             {
-                // Count the number of trailing zeros which gives the smallest valid move.
-                // From: http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightFloatCast.
-                float f = (float)(emptyTopSquares & -emptyTopSquares);
-                int nextValidMove = (int)((*(uint *)&f >> 23) - 0x7f);
-                nextValidMove = (nextValidMove == -127) ? 0 : nextValidMove;
+                // Get the next set bit in emptyTopSquares.
+                while ((emptyTopSquares & 1) == 0)
+                {
+                    emptyTopSquares >>= 1;
+                    nextValidMove++;
+                }
 
                 validMoves[0][i] = nextValidMove;
                 validMoves[1][nextValidMove] = i;
 
-                // Clear the current valid move.
-                emptyTopSquares &= ~((uint)1 << nextValidMove);
+                emptyTopSquares >>= 1;
+                nextValidMove++;
             }
 
             return validMoves;
