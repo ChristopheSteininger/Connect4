@@ -59,6 +59,11 @@ namespace Connect4
             int bestMove = -1;
             int score = -1;
 
+            // Only update the streak count for the AI player, no need
+            // the evaluate after the opposing player's move.
+            grid.UpdateLazyStreakCountForPlayer[player] = true;
+            grid.UpdateLazyStreakCountForPlayer[1 - player] = false;
+
             // Get the best move and measure the runtime.
             DateTime startTime = DateTime.Now;
             for (int depth = 1; depth < moveLookAhead; depth++)
@@ -85,6 +90,7 @@ namespace Connect4
 
             totalNodesSearched++;
 
+            // Check if the previous player won on the last move.
             if (state.LazyIsGameOver(1 - currentPlayer))
             {
                 Debug.Assert(!setBestMove);
@@ -106,8 +112,6 @@ namespace Connect4
             {
                 Debug.Assert(!setBestMove);
 
-                // TODO: Do not update streak count for the human player
-                // as it is never used.
                 return state.StreakCount[player];
             }
 

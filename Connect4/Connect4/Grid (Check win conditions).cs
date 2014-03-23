@@ -16,6 +16,14 @@ namespace Connect4
 
         private int lastMove = -1;
 
+        // The flags for which players to update the streak count after a move.
+        private bool[] updateLazyStreakCountForPlayer = new bool[] { false, false };
+        public bool[] UpdateLazyStreakCountForPlayer
+        {
+            get { return updateLazyStreakCountForPlayer; }
+            set { updateLazyStreakCountForPlayer = value; }
+        }
+
         private int[] streakCount = new int[2] { 0, 0 };
         public int[] StreakCount
         {
@@ -103,6 +111,11 @@ namespace Connect4
         private void LazyUpdatePlayerStreaks(int player, int move, bool increase)
         {
             Debug.Assert(player == 0 || player == 1);
+
+            if (!updateLazyStreakCountForPlayer[player])
+            {
+                return;
+            }
 
             int result = 0;
             List<ulong> masks = lazyMasks[0, nextFreeTile[move] - 1, move];
