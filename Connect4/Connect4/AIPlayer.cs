@@ -10,10 +10,12 @@ namespace Connect4
     {
         private const int infinity = 1000000;
 
-        private readonly int moveLookAhead = 15;
+        private readonly int moveLookAhead = 14;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
+
+        private int move = 0;
 
         // Statistics for console.
         private bool printToConsole = true;
@@ -68,7 +70,7 @@ namespace Connect4
             DateTime startTime = DateTime.Now;
             for (int depth = 1; depth < moveLookAhead; depth++)
             {
-                score = Minimax(depth, grid, player, -infinity,
+                score = Minimax(move, move + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
                 grid.ClearMoveHistory();
             }
@@ -80,13 +82,15 @@ namespace Connect4
                 PrintMoveStatistics(runtime, score);
             }
 
+            move++;
+
             return bestMove;
         }
 
-        private int Minimax(int depth, Grid state, int currentPlayer,
+        private int Minimax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
             int alpha, int beta, ref int outBestMove, bool setBestMove)
         {
-            Debug.Assert(depth >= 0);
+            Debug.Assert(currentDepth <= searchDepth);
 
             totalNodesSearched++;
 
@@ -108,7 +112,7 @@ namespace Connect4
             }
 
             // Evaluate the state if this is a terminal state.
-            if (depth == 0)
+            if (currentDepth == searchDepth)
             {
                 Debug.Assert(!setBestMove);
 
@@ -130,7 +134,7 @@ namespace Connect4
             TTableEntry entry;
             if (transpositionTable.TryGet(state, out entry))
             {
-                if (entry.Depth >= depth)
+                if (entry.Depth >= searchDepth)
                 {
                     tableLookups++;
 
@@ -198,8 +202,8 @@ namespace Connect4
                 int move = validMoves[0][i];
 
                 state.Move(move, currentPlayer);
-                int childScore = Minimax(depth - 1, state, 1 - currentPlayer, alpha,
-                    beta, ref dummy, false);
+                int childScore = Minimax(currentDepth + 1, searchDepth, state, 1 - currentPlayer,
+                    alpha, beta, ref dummy, false);
                 state.UndoMove(move, currentPlayer);
 
                 if ((maximise && childScore > score) || (!maximise && childScore < score))
@@ -226,7 +230,7 @@ namespace Connect4
 
                         NodeType type = (maximise) ? NodeType.Lower : NodeType.Upper;
 
-                        transpositionTable.Add(new TTableEntry(depth, bestMove,
+                        transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
                             state.GetTTableHash(), score, type));
 
                         if (setBestMove)
@@ -243,7 +247,7 @@ namespace Connect4
 
             // Store the score in the t-table as an exact score in case the same state is
             // reached later.
-            transpositionTable.Add(new TTableEntry(depth, bestMove, state.GetTTableHash(),
+            transpositionTable.Add(new TTableEntry(searchDepth, bestMove, state.GetTTableHash(),
                 score, NodeType.Exact));
 
             if (setBestMove)

@@ -162,28 +162,6 @@ namespace Connect4
             return validMoves;
         }
 
-        public int[][] GetValidMoves2()
-        {
-            List<int> validMoves = new List<int>();
-            int[] indexes = new int[width];
-
-            int index = 0;
-            for (int i = 0; i < width; i++)
-            {
-                if (IsValidMove(i))
-                {
-                    validMoves.Add(i);
-                    indexes[i] = index++;
-                }
-            }
-
-            int[][] result = new int[2][];
-            result[0] = validMoves.ToArray();
-            result[1] = indexes;
-
-            return result;
-        }
-
         public bool IsValidMove(int column)
         {
             return 0 <= column && column < width && nextFreeTile[column] < height;
