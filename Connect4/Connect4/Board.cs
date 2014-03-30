@@ -13,6 +13,7 @@ namespace Connect4
         private Player[] players = new Player[2];
 
         private Grid grid;
+        private int winner = -1;
 
         private int highlighedColumn;
         private int boardStartX;
@@ -41,16 +42,28 @@ namespace Connect4
 
         public override void Update(GameTime gameTime)
         {
-            PlayTurn();
+            if (winner == -1)
+            {
+                winner = PlayTurn();
+
+                // If the game ended on this turn, let both players know.
+                if (winner != -1)
+                {
+                    players[0].GameOver(winner == 0);
+                    players[1].GameOver(winner == 1);
+                }
+            }
 
             base.Update(gameTime);
         }
 
-        private void PlayTurn()
+        private int PlayTurn()
         {
             Debug.Assert(currentPlayer == 0 || currentPlayer == 1);
 
-            if (grid.IsGameOver() == -1)
+            int winner = grid.IsGameOver();
+
+            if (winner == -1)
             {
                 highlighedColumn = players[currentPlayer].HighlightColumn(
                     boardStartX, boardStartY, boardStartY + grid.Height * disc.Height,
@@ -65,6 +78,8 @@ namespace Connect4
                     highlighedColumn = -1;
                 }
             }
+
+            return winner;
         }
 
         public override void Draw(GameTime gameTime)

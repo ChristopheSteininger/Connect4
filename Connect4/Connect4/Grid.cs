@@ -211,28 +211,30 @@ namespace Connect4
 
             for (int row = height - 1; row >= 0; row--)
             {
+                result += "|";
                 for (int column = 0; column < width; column++)
                 {
                     switch (GetTileState(row, column))
                     {
                         case TileState.Empty:
-                            result += "-";
+                            result += "\u00B7";
                             break;
 
                         case TileState.Player1:
-                            result += "1";
+                            result += "\u25CB";
                             break;
 
                         case TileState.Player2:
-                            result += "2";
+                            result += "\u25CF";
                             break;
                     }
                 }
 
-                result += "\n";
+                result += "|" + Environment.NewLine;
             }
 
-            return result;
+            string horizontalBorder = "+" + new string('-', width) + "+";
+            return horizontalBorder + Environment.NewLine + result + horizontalBorder;
         }
 
         public ulong GetTTableHash()

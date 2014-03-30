@@ -16,6 +16,10 @@ namespace Connect4
 
         public abstract int GetMove(Grid grid);
 
+        public virtual void GameOver(bool winner)
+        {
+        }
+
         public virtual int HighlightColumn(int startX, int startY,
             int endY, int columns)
         {

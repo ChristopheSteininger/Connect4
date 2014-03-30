@@ -17,7 +17,9 @@ namespace Connect4
 
         private int move = 0;
 
-        // Statistics for console.
+        private AILog log;
+
+        // Statistics for log.
         private bool printToConsole = true;
         private int totalNodesSearched;
         private int endNodesSearched;
@@ -29,10 +31,7 @@ namespace Connect4
         public AIPlayer(int player)
             : base(player)
         {
-            if (printToConsole)
-            {
-                StartConsole();
-            }
+            log = new AILog(player, moveLookAhead, printToConsole);
         }
 
         public AIPlayer(int player, int moveLookAhead)
@@ -40,23 +39,17 @@ namespace Connect4
         {
             this.moveLookAhead = moveLookAhead;
 
-            if (printToConsole)
-            {
-                StartConsole();
-            }
+            log = new AILog(player, moveLookAhead, printToConsole);
         }
 
         public override int GetMove(Grid grid)
         {
-            if (printToConsole)
-            {
-                totalNodesSearched = 0;
-                endNodesSearched = 0;
-                shallowTableLookups = 0;
-                tableLookups = 0;
-                alphaBetaCuttoffs = 0;
-                Console.Write("Calculating next move . . . ");
-            }
+            totalNodesSearched = 0;
+            endNodesSearched = 0;
+            shallowTableLookups = 0;
+            tableLookups = 0;
+            alphaBetaCuttoffs = 0;
+            log.Write("Calculating move {0:N0} . . . ", move);
 
             int bestMove = -1;
             int score = -1;
@@ -76,15 +69,17 @@ namespace Connect4
             }
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             totalRuntime += runtime;
-            
-            if (printToConsole)
-            {
-                PrintMoveStatistics(runtime, score);
-            }
+
+            PrintMoveStatistics(runtime, grid, bestMove, score);
 
             move++;
 
             return bestMove;
+        }
+
+        public override void GameOver(bool winner)
+        {
+            log.EndGame(winner);
         }
 
         private int Minimax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
@@ -258,44 +253,43 @@ namespace Connect4
             return score;
         }
 
-        private void StartConsole()
+        private void PrintMoveStatistics(double runtime, Grid grid, int move, int score)
         {
-            Console.Title = "Debugging output for AI player";
-            Console.SetWindowSize(84, 60);
+            log.WriteLine("Done");
 
-            Console.WriteLine("Player {0} with {1} move look ahead.", player, moveLookAhead);
-            Console.WriteLine();
-        }
+            // Print the grid before the AI's move to the log file.
+            log.WriteLineToLog();
+            log.WriteLineToLog("Grid before AI move:");
+            log.WriteLineToLog(grid.ToString());
+            log.WriteLineToLog();
 
-        private void PrintMoveStatistics(double runtime, int score)
-        {
             // Print the number of nodes looked at and the search time.
             double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
-            Console.WriteLine("Done");
-            Console.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
+            log.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
                 totalNodesSearched, endNodesSearched);
-            Console.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
+            log.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
                 nodesPerMillisecond);
-            Console.WriteLine("Total runtime {0:N} ms.", totalRuntime);
-            Console.WriteLine("{0:N0} alpha and beta cutoffs.", alphaBetaCuttoffs);
+            log.WriteLine("Total runtime {0:N} ms.", totalRuntime);
+            log.WriteLine("{0:N0} alpha and beta cutoffs.", alphaBetaCuttoffs);
 
+            log.WriteLine("Move is {0:N0}.", move);
             if (score == infinity)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("AI win is guaranteed.");
+                log.WriteLine("AI win is guaranteed.");
                 Console.ResetColor();
             }
 
             else if (score == -infinity)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("AI loss is guaranteed (Assuming perfect play).");
+                log.WriteLine("AI loss is guaranteed (Assuming perfect play).");
                 Console.ResetColor();
             }
 
             else
             {
-                Console.WriteLine("Move score is {0:N0}.", score);
+                log.WriteLine("Move score is {0:N0}.", score);
             }
 
             // Print transposition table statistics.
@@ -306,25 +300,26 @@ namespace Connect4
             transpositionTable.TestUsage(out standardDeviation, out averageBucketSize,
                 out averageFullBucketSize, out fullBuckets);
 
-            Console.WriteLine("Transposition table:");
-            Console.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
-            Console.WriteLine("\tLookups:                  {0:N0}", tableLookups);
-            Console.WriteLine("\tRequests:                 {0:N0}",
+            log.WriteLine();
+            log.WriteLine("Transposition table:");
+            log.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
+            log.WriteLine("\tLookups:                  {0:N0}", tableLookups);
+            log.WriteLine("\tRequests:                 {0:N0}",
                 transpositionTable.Requests);
-            Console.WriteLine("\tInsertions:               {0:N0}",
+            log.WriteLine("\tInsertions:               {0:N0}",
                 transpositionTable.Insertions);
-            Console.WriteLine("\tCollisions:               {0:N0}",
+            log.WriteLine("\tCollisions:               {0:N0}",
                 transpositionTable.Collisions);
-            Console.WriteLine("\tItems:                    {0:N0}",
+            log.WriteLine("\tItems:                    {0:N0}",
                 transpositionTable.Size);
-            Console.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
-            Console.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
-            Console.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
-            Console.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
+            log.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
+            log.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
+            log.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
+            log.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
             transpositionTable.ResetStatistics();
 
-            Console.WriteLine();
-            Console.WriteLine();
+            log.WriteLine();
+            log.WriteLine();
         }
     }
 }
