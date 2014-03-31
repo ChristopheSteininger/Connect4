@@ -6,10 +6,10 @@ namespace Connect4
     class AILog
     {
         // Log folders.
-        private const String logRootFolder  = "Logs\\";
-        private const String allFolder      = logRootFolder + "All Logs\\";
-        private const String winFolder      = logRootFolder + "Win Log Copies\\";
-        private const String lossFolder     = logRootFolder + "Loss Log Copies\\";
+        private const String logRootFolder = "Logs\\";
+        private const String allFolder     = logRootFolder + "All Logs\\";
+        private const String winFolder     = logRootFolder + "Win Log Copies\\";
+        private const String lossFolder    = logRootFolder + "Loss Log Copies\\";
 
         // Special log files.
         private const String mostRecentGameLog   = logRootFolder + "Log 0 - Most Recent Game.txt";
@@ -45,7 +45,6 @@ namespace Connect4
             WriteLine();
         }
 
-        // Make sure that all required log folders exist.
         private void CreateFolders()
         {
             EnsureFolderExists(logRootFolder);
@@ -54,6 +53,7 @@ namespace Connect4
             EnsureFolderExists(lossFolder);
         }
 
+        // Make sure that the given folder exists.
         private void EnsureFolderExists(String folder)
         {
             if (!Directory.Exists(folder))

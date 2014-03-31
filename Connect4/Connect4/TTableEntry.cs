@@ -15,12 +15,6 @@ namespace Connect4
         public readonly int Score;
         public readonly NodeType NodeType;
 
-        private TTableEntry next;
-        public TTableEntry Next
-        {
-            get { return next; }
-        }
-
         public TTableEntry(int depth, int bestMove, ulong hash, int score, 
             NodeType nodeType)
         {
@@ -29,12 +23,6 @@ namespace Connect4
             this.Hash = hash;
             this.Score = score;
             this.NodeType = nodeType;
-            this.next = null;
-        }
-
-        public void LinkTo(TTableEntry entry)
-        {
-            next = entry;
         }
     }
 }

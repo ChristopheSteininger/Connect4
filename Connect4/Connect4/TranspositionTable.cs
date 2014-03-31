@@ -8,6 +8,7 @@ namespace Connect4
     class TranspositionTable
     {
         private const int tableSize = 1000009;
+        private const int searchSize = 3;
 
         private TTableEntry[] table = new TTableEntry[tableSize];
 
@@ -37,33 +38,61 @@ namespace Connect4
 
         public void Add(TTableEntry entry)
         {
-            int index = (int)(entry.Hash % tableSize);
-
-            if (table[index] == null)
-            {
-                size++;
-
-                table[index] = entry;
-            }
-
-            else if (table[index].Depth < entry.Depth)
-            {
-                table[index] = entry;
-
-                collisions++;
-            }
-
             insertions++;
+
+            ulong entryHash = entry.Hash;
+
+            int bestIndex = -1;
+            int minDepth = -1;
+
+            // Check up to searchSize entries to find the entry with the
+            // lowest depth.
+            for (ulong i = 0; i < searchSize; i++)
+            {
+                int index = (int)((entryHash + i) % tableSize);
+                TTableEntry currentEntry = table[index];
+
+                // If an entry is null, take it regardless of the depth
+                // of other entries.
+                if (currentEntry == null)
+                {
+                    table[index] = entry;
+                    size++;
+
+                    return;
+                }
+
+                int depth = currentEntry.Depth;
+                if (i == 0 || minDepth > depth)
+                {
+                    bestIndex = index;
+                    minDepth = depth;
+                }
+            }
+
+            table[bestIndex] = entry;
+            collisions++;
         }
 
         public bool TryGet(Grid state, out TTableEntry result)
         {
             requests++;
 
-            int index = (int)(state.GetTTableHash() % tableSize);
+            ulong stateHash = state.GetTTableHash();
 
-            result = table[index];
-            return result != null && result.Hash == state.GetTTableHash();
+            for (ulong i = 0; i < searchSize; i++)
+            {
+                int index = (int)((stateHash + i) % tableSize);
+                result = table[index];
+
+                if (result != null && result.Hash == stateHash)
+                {
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
         }
 
         public void ResetStatistics()
@@ -88,7 +117,7 @@ namespace Connect4
                 }
 
                 int bucketSize = 0;
-                for (TTableEntry entry = table[i]; entry != null; entry = entry.Next)
+                for (TTableEntry entry = table[i]; entry != null; entry = null/*entry.Next*/)
                 {
                     bucketSize++;
                 }
