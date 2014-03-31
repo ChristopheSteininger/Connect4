@@ -119,53 +119,9 @@ namespace Connect4
                 && nextFreeTile[column] == row;
         }
 
-        /// <summary>
-        /// Returns the valid moves and the index of each move.
-        /// </summary>
-        /// <returns>Two arrays, the first is the list of valid moves, the second
-        /// is the index of each move.</returns>
-        public int[][] GetValidMoves()
+        public uint GetInvalidMovesMask()
         {
-            // Get the top row of the grid.
-            ulong fullTopSquares = (playerPositions[0] | playerPositions[1]) >> (width * (height - 1));
-            uint emptyTopSquares = (uint)(fullTopSquares ^ (((ulong)1 << width) - 1));
-
-            // Count the number of bits set in fullTopSquares, which is the number of
-            // valid moves.
-            // From: http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel.
-            uint temp = emptyTopSquares;
-            temp = temp - ((temp >> 1) & 0x55555555);
-            temp = (temp & 0x33333333) + ((temp >> 2) & 0x33333333);
-            uint count = ((temp + (temp >> 4) & 0xF0F0F0F) * 0x1010101) >> 24;
-
-            int[][] validMoves = new int[2][];
-            validMoves[0] = new int[count];
-            validMoves[1] = new int[width];
-
-            int nextValidMove = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                // Get the next set bit in emptyTopSquares.
-                while ((emptyTopSquares & 1) == 0)
-                {
-                    emptyTopSquares >>= 1;
-                    validMoves[1][nextValidMove++] = -1;
-                }
-
-                validMoves[0][i] = nextValidMove;
-                validMoves[1][nextValidMove] = i;
-
-                emptyTopSquares >>= 1;
-                nextValidMove++;
-            }
-
-            for (int i = nextValidMove; i < width; i++)
-            {
-                validMoves[1][i] = -1;
-            }
-
-            return validMoves;
+            return (uint)((playerPositions[0] | playerPositions[1]) >> (width * (height - 1)));
         }
 
         public bool IsValidMove(int column)

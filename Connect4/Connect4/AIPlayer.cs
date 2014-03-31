@@ -9,6 +9,7 @@ namespace Connect4
     class AIPlayer : Player
     {
         private const int infinity = 1000000;
+        private const int killerMovesEntrySize = 2;
 
         // TODO: Parameterise this?
         private const int maxMoves = 7 * 6;
@@ -18,7 +19,7 @@ namespace Connect4
         private TranspositionTable transpositionTable
             = new TranspositionTable();
 
-        private int[] killerMoves;
+        private int[][] killerMovesTable;
 
         private int moveNumber = 0;
 
@@ -49,7 +50,11 @@ namespace Connect4
 
         private void CreateAIPlayer()
         {
-            killerMoves = new int[maxMoves - 1];
+            killerMovesTable = new int[maxMoves - 1][];
+            for (int i = 0; i < killerMovesTable.Length; i++)
+            {
+                killerMovesTable[i] = new int[killerMovesEntrySize];
+            }
 
             log = new AILog(player, moveLookAhead, printToConsole);
         }
@@ -126,25 +131,16 @@ namespace Connect4
                 return state.StreakCount[player];
             }
 
-            int[][] validMoves = state.GetValidMoves();
-
-            // If there are no valid moves, then this is a draw.
-            if (validMoves.Length == 0)
-            {
-                Debug.Assert(!setBestMove);
-                endNodesSearched++;
-
-                return 0;
-            }
-
-            // The killer move is tried first, followed by the shallow lookup (if present).
-            int killerMoveOrder = 0;
-            int shallowMoveOrder = 1;
+            // Will be set to the best move of a shallow lookup.
+            int shallowLookup = -1;
 
             // Check if this state has already been visited.
             TTableEntry entry;
             if (transpositionTable.TryGet(state, out entry))
             {
+                // If the state has been visited and searched at least as deep
+                // as needed, then return immediately or improve the alpha and
+                // beta values depending on the node type.
                 if (entry.Depth >= searchDepth)
                 {
                     tableLookups++;
@@ -186,44 +182,54 @@ namespace Connect4
                     }
                 }
 
+                // If this state has been visited but not searched deep enough,
+                // use the best move the lookup as a clue to which move might be
+                // best.
                 else
                 {
                     shallowTableLookups++;
-
-                    // Swap the second move and the best move from the entry.
-                    if (shallowMoveOrder < validMoves[0].Length)
-                    {
-                        int bestMoveIndex = validMoves[1][entry.BestMove];
-                        int temp = validMoves[0][shallowMoveOrder];
-                        validMoves[0][shallowMoveOrder] = entry.BestMove;
-                        validMoves[1][entry.BestMove] = shallowMoveOrder;
-                        validMoves[0][bestMoveIndex] = temp;
-                        validMoves[1][temp] = bestMoveIndex;
-                    }
+                    shallowLookup = entry.BestMove;
                 }
             }
 
-            // Put the killer move first.
-            int killerMove = killerMoves[currentDepth];
-            int killerMoveIndex = validMoves[1][killerMove];
-            if (killerMoveIndex != -1 && killerMoveOrder < validMoves[0].Length)
-            {
-                int temp = validMoves[0][killerMoveOrder];
-                validMoves[0][killerMoveOrder] = killerMove;
-                validMoves[1][killerMove] = killerMoveOrder;
-                validMoves[0][killerMoveIndex] = temp;
-                validMoves[1][temp] = killerMoveIndex;
-            }
-
-            // Otherwise, find the best move.
             bool maximise = currentPlayer == player;
             int bestMove = -1;
             int dummy = 0;
             int score = (maximise) ? int.MinValue : int.MaxValue;
 
-            for (int i = 0; i < validMoves[0].Length; i++)
+            int[] killerMoves = killerMovesTable[currentDepth];
+            int orderedMoves = 1 + killerMovesEntrySize;
+
+            // A bit vector where a 1 means the corresponding move has
+            // already been checked. Initialised to the invalid moves.
+            uint checkedMoves = state.GetInvalidMovesMask();
+
+            // Find the best move recurrsively. A negative i means
+            // use an ordered move.
+            for (int i = -orderedMoves; i < state.Width; i++)
             {
-                int move = validMoves[0][i];
+                int move = i;
+
+                // Use the killer moves first.
+                if (i < -1)
+                {
+                    move = killerMoves[i + orderedMoves];
+                }
+
+                // Use shallow moves next.
+                else if (i == -1)
+                {
+                    move = shallowLookup;
+                }
+
+                // Only proceed if the move is valid and has not been checked yet.
+                uint moveMask = (uint)1 << move;
+                if (move < 0 || (checkedMoves & moveMask) == moveMask)
+                {
+                    continue;
+                }
+
+                checkedMoves |= moveMask;
 
                 state.Move(move, currentPlayer);
                 int childScore = Minimax(currentDepth + 1, searchDepth, state, 1 - currentPlayer,
@@ -259,7 +265,14 @@ namespace Connect4
                             state.GetTTableHash(), score, type));
 
                         // Remember this move as a killer move at the current depth.
-                        killerMoves[currentDepth] = bestMove;
+                        if (killerMoves[killerMovesEntrySize - 1] == 0)
+                        {
+                            killerMoves[killerMovesEntrySize - 1] = bestMove;
+                        }
+                        else
+                        {
+                            killerMoves[0] = bestMove;
+                        }
 
                         if (setBestMove)
                         {
@@ -271,7 +284,14 @@ namespace Connect4
                 }
             }
 
-            Debug.Assert(bestMove != -1);
+            // If there are no valid moves, then this is a draw.
+            if (bestMove == -1)
+            {
+                Debug.Assert(!setBestMove);
+                endNodesSearched++;
+
+                return 0;
+            }
 
             // Store the score in the t-table as an exact score in case the same state is
             // reached later.
