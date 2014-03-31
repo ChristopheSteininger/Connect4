@@ -141,6 +141,7 @@ namespace Connect4
             int[][] validMoves = new int[2][];
             validMoves[0] = new int[count];
             validMoves[1] = new int[width];
+
             int nextValidMove = 0;
 
             for (int i = 0; i < count; i++)
@@ -149,7 +150,7 @@ namespace Connect4
                 while ((emptyTopSquares & 1) == 0)
                 {
                     emptyTopSquares >>= 1;
-                    nextValidMove++;
+                    validMoves[1][nextValidMove++] = -1;
                 }
 
                 validMoves[0][i] = nextValidMove;
@@ -157,6 +158,11 @@ namespace Connect4
 
                 emptyTopSquares >>= 1;
                 nextValidMove++;
+            }
+
+            for (int i = nextValidMove; i < width; i++)
+            {
+                validMoves[1][i] = -1;
             }
 
             return validMoves;

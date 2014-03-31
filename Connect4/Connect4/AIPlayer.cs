@@ -10,12 +10,17 @@ namespace Connect4
     {
         private const int infinity = 1000000;
 
-        private readonly int moveLookAhead = 14;
+        // TODO: Parameterise this?
+        private const int maxMoves = 7 * 6;
+
+        private readonly int moveLookAhead = 15;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
 
-        private int move = 0;
+        private int[] killerMoves;
+
+        private int moveNumber = 0;
 
         private AILog log;
 
@@ -31,13 +36,20 @@ namespace Connect4
         public AIPlayer(int player)
             : base(player)
         {
-            log = new AILog(player, moveLookAhead, printToConsole);
+            CreateAIPlayer();
         }
 
         public AIPlayer(int player, int moveLookAhead)
             : base(player)
         {
             this.moveLookAhead = moveLookAhead;
+
+            CreateAIPlayer();
+        }
+
+        private void CreateAIPlayer()
+        {
+            killerMoves = new int[maxMoves - 1];
 
             log = new AILog(player, moveLookAhead, printToConsole);
         }
@@ -49,7 +61,7 @@ namespace Connect4
             shallowTableLookups = 0;
             tableLookups = 0;
             alphaBetaCuttoffs = 0;
-            log.Write("Calculating move {0:N0} . . . ", move);
+            log.Write("Calculating move {0:N0} . . . ", moveNumber);
 
             int bestMove = -1;
             int score = -1;
@@ -63,7 +75,7 @@ namespace Connect4
             DateTime startTime = DateTime.Now;
             for (int depth = 1; depth < moveLookAhead; depth++)
             {
-                score = Minimax(move, move + depth, grid, player, -infinity,
+                score = Minimax(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
                 grid.ClearMoveHistory();
             }
@@ -72,7 +84,7 @@ namespace Connect4
 
             PrintMoveStatistics(runtime, grid, bestMove, score);
 
-            move++;
+            moveNumber++;
 
             return bestMove;
         }
@@ -125,6 +137,10 @@ namespace Connect4
                 return 0;
             }
 
+            // The killer move is tried first, followed by the shallow lookup (if present).
+            int killerMoveOrder = 0;
+            int shallowMoveOrder = 1;
+
             // Check if this state has already been visited.
             TTableEntry entry;
             if (transpositionTable.TryGet(state, out entry))
@@ -174,16 +190,29 @@ namespace Connect4
                 {
                     shallowTableLookups++;
 
-                    // Swap the first move and the best move from the entry.
-                    int bestMoveIndex = validMoves[1][entry.BestMove];
-                    int temp = validMoves[0][0];
-                    validMoves[0][0] = entry.BestMove;
-                    validMoves[0][bestMoveIndex] = temp;
-                    validMoves[1][0] = bestMoveIndex;
-                    validMoves[1][bestMoveIndex] = 0;
-
-                    Debug.Assert(validMoves[0][0] == entry.BestMove);
+                    // Swap the second move and the best move from the entry.
+                    if (shallowMoveOrder < validMoves[0].Length)
+                    {
+                        int bestMoveIndex = validMoves[1][entry.BestMove];
+                        int temp = validMoves[0][shallowMoveOrder];
+                        validMoves[0][shallowMoveOrder] = entry.BestMove;
+                        validMoves[1][entry.BestMove] = shallowMoveOrder;
+                        validMoves[0][bestMoveIndex] = temp;
+                        validMoves[1][temp] = bestMoveIndex;
+                    }
                 }
+            }
+
+            // Put the killer move first.
+            int killerMove = killerMoves[currentDepth];
+            int killerMoveIndex = validMoves[1][killerMove];
+            if (killerMoveIndex != -1 && killerMoveOrder < validMoves[0].Length)
+            {
+                int temp = validMoves[0][killerMoveOrder];
+                validMoves[0][killerMoveOrder] = killerMove;
+                validMoves[1][killerMove] = killerMoveOrder;
+                validMoves[0][killerMoveIndex] = temp;
+                validMoves[1][temp] = killerMoveIndex;
             }
 
             // Otherwise, find the best move.
@@ -223,10 +252,14 @@ namespace Connect4
                         //Debug.Assert(!setBestMove);
                         alphaBetaCuttoffs++;
 
+                        // Store the current score as an upper or lower bound on the exact
+                        // score.
                         NodeType type = (maximise) ? NodeType.Lower : NodeType.Upper;
-
                         transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
                             state.GetTTableHash(), score, type));
+
+                        // Remember this move as a killer move at the current depth.
+                        killerMoves[currentDepth] = bestMove;
 
                         if (setBestMove)
                         {
@@ -293,15 +326,10 @@ namespace Connect4
             }
 
             // Print transposition table statistics.
-            double standardDeviation;
-            double averageBucketSize;
-            double averageFullBucketSize;
-            int fullBuckets;
-            transpositionTable.TestUsage(out standardDeviation, out averageBucketSize,
-                out averageFullBucketSize, out fullBuckets);
-
             log.WriteLine();
             log.WriteLine("Transposition table:");
+            log.WriteLine("\tSize:                     {0:N0}", TranspositionTable.TableSize);
+            log.WriteLine("\tSearch Size:              {0:N0}", TranspositionTable.SearchSize);
             log.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
             log.WriteLine("\tLookups:                  {0:N0}", tableLookups);
             log.WriteLine("\tRequests:                 {0:N0}",
@@ -310,12 +338,9 @@ namespace Connect4
                 transpositionTable.Insertions);
             log.WriteLine("\tCollisions:               {0:N0}",
                 transpositionTable.Collisions);
-            log.WriteLine("\tItems:                    {0:N0}",
-                transpositionTable.Size);
-            log.WriteLine("\tStandard deviation:       {0:N4}", standardDeviation);
-            log.WriteLine("\tAverage bucket size:      {0:N4}", averageBucketSize);
-            log.WriteLine("\tAverage full bucket size: {0:N4}", averageFullBucketSize);
-            log.WriteLine("\tFull buckets:             {0:N0}", fullBuckets);
+            log.WriteLine("\tItems:                    {0:N0} ({1:N4}% full)",
+                transpositionTable.Size, 100.0 * transpositionTable.Size
+                / TranspositionTable.TableSize);
             transpositionTable.ResetStatistics();
 
             log.WriteLine();

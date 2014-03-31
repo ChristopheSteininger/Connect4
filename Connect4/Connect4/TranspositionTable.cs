@@ -7,10 +7,10 @@ namespace Connect4
 {
     class TranspositionTable
     {
-        private const int tableSize = 1000009;
-        private const int searchSize = 3;
+        public const int TableSize = 1000009;
+        public const int SearchSize = 3;
 
-        private TTableEntry[] table = new TTableEntry[tableSize];
+        private TTableEntry[] table = new TTableEntry[TableSize];
 
         private int size = 0;
         public int Size
@@ -47,9 +47,9 @@ namespace Connect4
 
             // Check up to searchSize entries to find the entry with the
             // lowest depth.
-            for (ulong i = 0; i < searchSize; i++)
+            for (ulong i = 0; i < SearchSize; i++)
             {
-                int index = (int)((entryHash + i) % tableSize);
+                int index = (int)((entryHash + i) % TableSize);
                 TTableEntry currentEntry = table[index];
 
                 // If an entry is null, take it regardless of the depth
@@ -80,9 +80,9 @@ namespace Connect4
 
             ulong stateHash = state.GetTTableHash();
 
-            for (ulong i = 0; i < searchSize; i++)
+            for (ulong i = 0; i < SearchSize; i++)
             {
-                int index = (int)((stateHash + i) % tableSize);
+                int index = (int)((stateHash + i) % TableSize);
                 result = table[index];
 
                 if (result != null && result.Hash == stateHash)
@@ -109,7 +109,7 @@ namespace Connect4
 
             fullBuckets = 0;
 
-            for (int i = 0; i < tableSize; i++)
+            for (int i = 0; i < TableSize; i++)
             {
                 if (table[i] != null)
                 {
@@ -126,9 +126,9 @@ namespace Connect4
             }
 
             averageFullBucketSize = (double)size / fullBuckets;
-            averageBucketSize = (double)size / tableSize;
+            averageBucketSize = (double)size / TableSize;
 
-            standardDeviation = Math.Sqrt(((double)totalBucketSizeSquared / tableSize)
+            standardDeviation = Math.Sqrt(((double)totalBucketSizeSquared / TableSize)
                 - averageBucketSize * averageBucketSize);
 
         }
