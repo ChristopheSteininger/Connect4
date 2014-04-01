@@ -14,7 +14,7 @@ namespace Connect4
         // TODO: Parameterise this?
         private const int maxMoves = 7 * 6;
 
-        private readonly int moveLookAhead = 15;
+        private readonly int moveLookAhead = 16;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -31,24 +31,26 @@ namespace Connect4
         private int endNodesSearched;
         private int shallowTableLookups;
         private int tableLookups;
-        private int alphaBetaCuttoffs;
+        private int alphaBetaCutoffs;
+        private int alphaCutoffs;
+        private int betaCutoffs;
         private double totalRuntime = 0;
 
-        public AIPlayer(int player)
+        public AIPlayer(int player, int seed)
             : base(player)
         {
-            CreateAIPlayer();
+            CreateAIPlayer(seed);
         }
 
-        public AIPlayer(int player, int moveLookAhead)
+        public AIPlayer(int player, int moveLookAhead, int seed)
             : base(player)
         {
             this.moveLookAhead = moveLookAhead;
 
-            CreateAIPlayer();
+            CreateAIPlayer(seed);
         }
 
-        private void CreateAIPlayer()
+        private void CreateAIPlayer(int seed)
         {
             killerMovesTable = new int[maxMoves - 1][];
             for (int i = 0; i < killerMovesTable.Length; i++)
@@ -56,7 +58,7 @@ namespace Connect4
                 killerMovesTable[i] = new int[killerMovesEntrySize];
             }
 
-            log = new AILog(player, moveLookAhead, printToConsole);
+            log = new AILog(player, seed, moveLookAhead, printToConsole);
         }
 
         public override int GetMove(Grid grid)
@@ -65,7 +67,9 @@ namespace Connect4
             endNodesSearched = 0;
             shallowTableLookups = 0;
             tableLookups = 0;
-            alphaBetaCuttoffs = 0;
+            alphaBetaCutoffs = 0;
+            alphaCutoffs = 0;
+            betaCutoffs = 0;
             log.Write("Calculating move {0:N0} . . . ", moveNumber);
 
             int bestMove = -1;
@@ -127,7 +131,6 @@ namespace Connect4
             if (currentDepth == searchDepth)
             {
                 Debug.Assert(!setBestMove);
-
                 return state.StreakCount[player];
             }
 
@@ -175,7 +178,7 @@ namespace Connect4
                     {
                         // TODO: This assertion fails when the AI is guaranteed to win.
                         //Debug.Assert(!setBestMove);
-                        alphaBetaCuttoffs++;
+                        alphaBetaCutoffs++;
 
                         // TODO: Check that the lower bound should be returned here.
                         return alpha;
@@ -200,26 +203,36 @@ namespace Connect4
             int[] killerMoves = killerMovesTable[currentDepth];
             int orderedMoves = 1 + killerMovesEntrySize;
 
-            // A bit vector where a 1 means the corresponding move has
-            // already been checked. Initialised to the invalid moves.
+            // A bitmap where a 1 means the corresponding move has already been
+            // checked. Initialised with a 1 at all invalid moves.
             uint checkedMoves = state.GetInvalidMovesMask();
+
+            // checkMoves will be equal to this when there are no more valid
+            // moves.
+            uint allMovesChecked = ((uint)1 << state.Width) - 1;
 
             // Find the best move recurrsively. A negative i means
             // use an ordered move.
             for (int i = -orderedMoves; i < state.Width; i++)
             {
-                int move = i;
-
-                // Use the killer moves first.
-                if (i < -1)
+                // Stop if all valid moves have been checked.
+                if (checkedMoves == allMovesChecked)
                 {
-                    move = killerMoves[i + orderedMoves];
+                    break;
                 }
 
-                // Use shallow moves next.
-                else if (i == -1)
+                int move = i;
+
+                // Use shallow moves first.
+                if (i == -orderedMoves)
                 {
                     move = shallowLookup;
+                }
+
+                // Use the killer moves next.
+                else if (i < 0)
+                {
+                    move = killerMoves[i + orderedMoves - 1];
                 }
 
                 // Only proceed if the move is valid and has not been checked yet.
@@ -231,48 +244,33 @@ namespace Connect4
 
                 checkedMoves |= moveMask;
 
+                // Apply the move and recurse.
                 state.Move(move, currentPlayer);
                 int childScore = Minimax(currentDepth + 1, searchDepth, state, 1 - currentPlayer,
                     alpha, beta, ref dummy, false);
                 state.UndoMove(move, currentPlayer);
 
-                if ((maximise && childScore > score) || (!maximise && childScore < score))
+                // If it is the maximising player's turn and this is a new maximum,
+                // update alpha and check for a beta cutoff.
+                if (maximise && childScore > score)
                 {
                     score = childScore;
+                    alpha = childScore;
                     bestMove = move;
 
-                    // Update alpha and beta values.
-                    if (maximise)
+                    // beta cutoff
+                    if (score >= beta)
                     {
-                        alpha = score;
-                    }
-                    else
-                    {
-                        beta = score;
-                    }
+                        alphaBetaCutoffs++;
+                        betaCutoffs++;
 
-                    // If alpha or beta cutoff.
-                    if (beta <= alpha)
-                    {
-                        // TODO: This assertion fails when the AI is guaranteed to win.
-                        //Debug.Assert(!setBestMove);
-                        alphaBetaCuttoffs++;
-
-                        // Store the current score as an upper or lower bound on the exact
-                        // score.
-                        NodeType type = (maximise) ? NodeType.Lower : NodeType.Upper;
+                        // Store the current score as a lower bound on the exact score.
                         transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
-                            state.GetTTableHash(), score, type));
+                            state.GetTTableHash(), score, NodeType.Lower));
 
                         // Remember this move as a killer move at the current depth.
-                        if (killerMoves[killerMovesEntrySize - 1] == 0)
-                        {
-                            killerMoves[killerMovesEntrySize - 1] = bestMove;
-                        }
-                        else
-                        {
-                            killerMoves[0] = bestMove;
-                        }
+                        killerMoves[1] = killerMoves[0];
+                        killerMoves[0] = bestMove;
 
                         if (setBestMove)
                         {
@@ -282,14 +280,41 @@ namespace Connect4
                         return score;
                     }
                 }
+
+                // If this is the minimising player's turn and this is new minimum,
+                // update beta and check for alpha cutoff.
+                else if (!maximise && childScore < score)
+                {
+                    score = childScore;
+                    beta = childScore;
+                    bestMove = move;
+
+                    // alpha cutoff.
+                    if (score <= alpha)
+                    {
+                        alphaBetaCutoffs++;
+                        alphaCutoffs++;
+
+                        // Store the current score as an upper bound on the exact score.
+                        transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
+                            state.GetTTableHash(), score, NodeType.Upper));
+
+                        // Remember this move as a killer move at the current depth.
+                        killerMoves[1] = killerMoves[0];
+                        killerMoves[0] = bestMove;
+
+                        Debug.Assert(!setBestMove);
+                        return score;
+                    }
+                }
             }
 
             // If there are no valid moves, then this is a draw.
             if (bestMove == -1)
             {
-                Debug.Assert(!setBestMove);
                 endNodesSearched++;
 
+                Debug.Assert(!setBestMove);
                 return 0;
             }
 
@@ -323,7 +348,9 @@ namespace Connect4
             log.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
                 nodesPerMillisecond);
             log.WriteLine("Total runtime {0:N} ms.", totalRuntime);
-            log.WriteLine("{0:N0} alpha and beta cutoffs.", alphaBetaCuttoffs);
+            log.WriteLine("{0:N0} alpha and beta cutoffs.", alphaBetaCutoffs);
+            log.WriteLine("\t(including {0:N0} alpha and {1:N0} beta cutoffs)",
+                alphaCutoffs, betaCutoffs);
 
             log.WriteLine("Move is {0:N0}.", move);
             if (score == infinity)

@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Graphics;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Connect4
 {
@@ -21,14 +21,19 @@ namespace Connect4
         private SpriteBatch spriteBatch;
         private Texture2D disc;
 
-        public Board(int gridWidth, int gridHeight, Player player1, Player player2,
-            Game game)
+        public Board(int gridWidth, int gridHeight, Game game)
             : base(game)
         {
-            this.players[0] = player1;
-            this.players[1] = player2;
+            //const int seed = 1092552428;
+            int seed = new Random().Next();
 
-            this.grid = new Grid(gridWidth, gridHeight);
+            const int AIPlayer = 0;
+            const int humanPlayer = 1;
+
+            this.players[AIPlayer] = new AIPlayer(AIPlayer, seed);
+            this.players[humanPlayer] = new HumanPlayer(humanPlayer);
+
+            this.grid = new Grid(gridWidth, gridHeight, seed);
         }
 
         protected override void LoadContent()

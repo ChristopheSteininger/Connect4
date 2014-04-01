@@ -21,7 +21,7 @@ namespace Connect4
 
         private bool printToConsole;
 
-        public AILog(int player, int moveLookAhead, bool printToConsole)
+        public AILog(int player, int seed, int moveLookAhead, bool printToConsole)
         {
             this.printToConsole = printToConsole;
 
@@ -42,6 +42,7 @@ namespace Connect4
             }
 
             WriteLine("Player {0} with {1} move look ahead.", player, moveLookAhead);
+            WriteLine("Seed is {0}", seed);
             WriteLine();
         }
 

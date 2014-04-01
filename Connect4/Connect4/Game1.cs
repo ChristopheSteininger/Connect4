@@ -16,9 +16,8 @@ namespace Connect4
     /// </summary>
     public class Game1 : Microsoft.Xna.Framework.Game
     {
-        GraphicsDeviceManager graphics;
-
-        Board board;
+        private GraphicsDeviceManager graphics;
+        private Board board;
 
         public Game1()
         {
@@ -29,8 +28,7 @@ namespace Connect4
 
             IsMouseVisible = true;
 
-            board = new Board(7, 6, new AIPlayer(0), new HumanPlayer(1), this);
-            //board = new Board(7, 6, new HumanPlayer(0), new AIPlayer(1), this);
+            board = new Board(7, 6, this);
             Components.Add(board);
         }
 

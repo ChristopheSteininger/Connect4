@@ -22,6 +22,7 @@ namespace Connect4
 
         private int[] nextFreeTile;
 
+        private int seed;
         private ulong[][][] zobristTable;
         private ulong hash = 0;
 
@@ -36,7 +37,7 @@ namespace Connect4
             get { return GetTileState(row, column); }
         }
 
-        public Grid(int width, int height)
+        public Grid(int width, int height, int seed)
         {
             Debug.Assert(width > 4);
             Debug.Assert(height > 4);
@@ -45,13 +46,15 @@ namespace Connect4
             this.width = width;
             this.height = height;
 
+            this.playerPositions = new ulong[2] { 0, 0 };
+
             this.nextFreeTile = new int[width];
             for (int y = 0; y < height; y++)
             {
                 nextFreeTile[y] = 0;
             }
 
-            this.playerPositions = new ulong[2] { 0, 0 };
+            this.seed = seed;
 
             SetStreakMasks();
             InitialiseZobristTable();
@@ -59,7 +62,7 @@ namespace Connect4
 
         private void InitialiseZobristTable()
         {
-            Random random = new Random();
+            Random random = new Random(seed);
             zobristTable = new ulong[height][][];
 
             for (int y = 0; y < height; y++)
