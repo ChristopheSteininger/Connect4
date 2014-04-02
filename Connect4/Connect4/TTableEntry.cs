@@ -7,7 +7,7 @@ namespace Connect4
 {
     enum NodeType { Exact, Upper, Lower }
 
-    class TTableEntry
+    struct TTableEntry
     {
         public readonly int Depth;
         public readonly int BestMove;

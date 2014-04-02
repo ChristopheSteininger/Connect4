@@ -36,6 +36,15 @@ namespace Connect4
             get { return collisions; }
         }
 
+        public TranspositionTable()
+        {
+            // Initialise the table, a depth of -1 means free entry.
+            for (int i = 0; i < TableSize; i++)
+            {
+                table[i] = new TTableEntry(-1, 0, 0, 0, 0);
+            }
+        }
+
         public void Add(TTableEntry entry)
         {
             insertions++;
@@ -54,7 +63,7 @@ namespace Connect4
 
                 // If an entry is null, take it regardless of the depth
                 // of other entries.
-                if (currentEntry == null)
+                if (currentEntry.Depth == -1)
                 {
                     table[index] = entry;
                     size++;
@@ -80,18 +89,19 @@ namespace Connect4
 
             ulong stateHash = state.GetTTableHash();
 
-            for (ulong i = 0; i < SearchSize; i++)
+            ulong i = 0;
+            do
             {
                 int index = (int)((stateHash + i) % TableSize);
                 result = table[index];
 
-                if (result != null && result.Hash == stateHash)
+                if (result.Depth != -1 && result.Hash == stateHash)
                 {
                     return true;
                 }
-            }
+                i++;
+            } while (i < SearchSize);
 
-            result = null;
             return false;
         }
 
@@ -100,37 +110,6 @@ namespace Connect4
             insertions = 0;
             requests = 0;
             collisions = 0;
-        }
-
-        public void TestUsage(out double standardDeviation, out double averageBucketSize,
-            out double averageFullBucketSize, out int fullBuckets)
-        {
-            int totalBucketSizeSquared = 0;
-
-            fullBuckets = 0;
-
-            for (int i = 0; i < TableSize; i++)
-            {
-                if (table[i] != null)
-                {
-                    fullBuckets++;
-                }
-
-                int bucketSize = 0;
-                for (TTableEntry entry = table[i]; entry != null; entry = null/*entry.Next*/)
-                {
-                    bucketSize++;
-                }
-
-                totalBucketSizeSquared += bucketSize * bucketSize;
-            }
-
-            averageFullBucketSize = (double)size / fullBuckets;
-            averageBucketSize = (double)size / TableSize;
-
-            standardDeviation = Math.Sqrt(((double)totalBucketSizeSquared / TableSize)
-                - averageBucketSize * averageBucketSize);
-
         }
     }
 }
