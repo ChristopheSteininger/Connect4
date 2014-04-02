@@ -7,7 +7,7 @@ namespace Connect4
 {
     class TranspositionTable
     {
-        public const int TableSize = 1000009;
+        public const int TableSize = 8306069;
         public const int SearchSize = 3;
 
         private TTableEntry[] table = new TTableEntry[TableSize];

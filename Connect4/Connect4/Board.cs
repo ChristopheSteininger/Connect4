@@ -24,7 +24,7 @@ namespace Connect4
         public Board(int gridWidth, int gridHeight, Game game)
             : base(game)
         {
-            //const int seed = 1092552428;
+            //int seed = 1092552428;
             int seed = new Random().Next();
 
             const int AIPlayer = 0;

@@ -21,6 +21,8 @@ namespace Connect4
 
         private int[][] killerMovesTable;
 
+        private int[] staticMoveOrdering = new int[] { 1, 5, 4, 3, 2, 0, 6 };
+
         private int moveNumber = 0;
 
         private AILog log;
@@ -56,6 +58,10 @@ namespace Connect4
             for (int i = 0; i < killerMovesTable.Length; i++)
             {
                 killerMovesTable[i] = new int[killerMovesEntrySize];
+                for (int j = 0; j < killerMovesEntrySize; j++)
+                {
+                    killerMovesTable[i][j] = -1;
+                }
             }
 
             log = new AILog(player, seed, moveLookAhead, printToConsole);
@@ -63,6 +69,12 @@ namespace Connect4
 
         public override int GetMove(Grid grid)
         {
+            Debug.Assert(grid.Width == 7);
+            Debug.Assert(grid.Height == 6);
+
+            log.Write("Calculating move {0} . . . ", moveNumber);
+
+            // Reset statistics counters.
             totalNodesSearched = 0;
             endNodesSearched = 0;
             shallowTableLookups = 0;
@@ -70,7 +82,6 @@ namespace Connect4
             alphaBetaCutoffs = 0;
             alphaCutoffs = 0;
             betaCutoffs = 0;
-            log.Write("Calculating move {0:N0} . . . ", moveNumber);
 
             int bestMove = -1;
             int score = -1;
@@ -93,7 +104,7 @@ namespace Connect4
 
             PrintMoveStatistics(runtime, grid, bestMove, score);
 
-            moveNumber++;
+            moveNumber += 2;
 
             return bestMove;
         }
@@ -212,16 +223,11 @@ namespace Connect4
             uint allMovesChecked = ((uint)1 << state.Width) - 1;
 
             // Find the best move recurrsively. A negative i means
-            // use an ordered move.
-            for (int i = -orderedMoves; i < state.Width; i++)
+            // use the shallow lookup or killer move.
+            for (int i = -orderedMoves; i < state.Width
+                && checkedMoves != allMovesChecked; i++)
             {
-                // Stop if all valid moves have been checked.
-                if (checkedMoves == allMovesChecked)
-                {
-                    break;
-                }
-
-                int move = i;
+                int move;
 
                 // Use shallow moves first.
                 if (i == -orderedMoves)
@@ -235,6 +241,12 @@ namespace Connect4
                     move = killerMoves[i + orderedMoves - 1];
                 }
 
+                // Otherwise, use the static move ordering.
+                else
+                {
+                    move = staticMoveOrdering[i];
+                }
+
                 // Only proceed if the move is valid and has not been checked yet.
                 uint moveMask = (uint)1 << move;
                 if (move < 0 || (checkedMoves & moveMask) == moveMask)
@@ -242,6 +254,8 @@ namespace Connect4
                     continue;
                 }
 
+                // At this point, the move has been found, so mark the move
+                // as invalid.
                 checkedMoves |= moveMask;
 
                 // Apply the move and recurse.
