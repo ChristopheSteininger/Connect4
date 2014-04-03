@@ -41,6 +41,11 @@ namespace Connect4
                 Console.SetWindowSize(84, 60);
             }
 
+#if DEBUG
+            WriteLine("Debug build.");
+#else
+            WriteLine("Release build.");
+#endif
             WriteLine("Player {0} with {1} move look ahead.", player, moveLookAhead);
             WriteLine("Seed is {0}", seed);
             WriteLine();

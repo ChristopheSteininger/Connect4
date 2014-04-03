@@ -8,8 +8,12 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
-        private const int infinity = 1000000;
+        private const int infinity = 127;
         private const int killerMovesEntrySize = 2;
+
+        public const int NodeTypeExact = 1;
+        public const int NodeTypeUpper = 2;
+        public const int NodeTypeLower = 3;
 
         // TODO: Parameterise this?
         private const int maxMoves = 7 * 6;
@@ -93,7 +97,7 @@ namespace Connect4
 
             // Get the best move and measure the runtime.
             DateTime startTime = DateTime.Now;
-            for (int depth = 1; depth < moveLookAhead; depth++)
+            for (int depth = 1; depth < moveLookAhead && moveNumber + depth <= maxMoves; depth++)
             {
                 score = Minimax(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
@@ -120,6 +124,15 @@ namespace Connect4
             Debug.Assert(currentDepth <= searchDepth);
 
             totalNodesSearched++;
+
+            // If there are no valid moves, then this is a draw.
+            if (currentDepth >= maxMoves)
+            {
+                endNodesSearched++;
+
+                Debug.Assert(!setBestMove);
+                return 0;
+            }
 
             // Check if the previous player won on the last move.
             if (state.LazyIsGameOver(1 - currentPlayer))
@@ -149,37 +162,37 @@ namespace Connect4
             int shallowLookup = -1;
 
             // Check if this state has already been visited.
-            TTableEntry entry;
+            ulong entry;
             if (transpositionTable.TryGet(state, out entry))
             {
                 // If the state has been visited and searched at least as deep
                 // as needed, then return immediately or improve the alpha and
                 // beta values depending on the node type.
-                if (entry.Depth >= searchDepth)
+                if (transpositionTable.GetDepth(entry) >= searchDepth)
                 {
                     tableLookups++;
 
-                    switch (entry.NodeType)
+                    switch (transpositionTable.GetNodeType(entry))
                     {
                         // If the score is exact, there is no need to check anything
                         // else, so return the score of the entry.
-                        case NodeType.Exact:
+                        case NodeTypeExact:
                             if (setBestMove)
                             {
-                                outBestMove = entry.BestMove;
+                                outBestMove = transpositionTable.GetBestMove(entry);
                             }
-                            return entry.Score;
+                            return transpositionTable.GetScore(entry);
 
                         // If the entry score is an upper bound on the actual score,
                         // see if the current upper bound can be reduced.
-                        case NodeType.Upper:
-                            beta = Math.Min(beta, entry.Score);
+                        case NodeTypeUpper:
+                            beta = Math.Min(beta, transpositionTable.GetScore(entry));
                             break;
 
                         // If the entry score is a lower bound on the actual score,
                         // see if the current lower bound can be increased.
-                        case NodeType.Lower:
-                            alpha = Math.Max(alpha, entry.Score);
+                        case NodeTypeLower:
+                            alpha = Math.Max(alpha, transpositionTable.GetScore(entry));
                             break;
                     }
 
@@ -187,9 +200,12 @@ namespace Connect4
                     // this is a cuttoff.
                     if (beta <= alpha)
                     {
-                        // TODO: This assertion fails when the AI is guaranteed to win.
-                        //Debug.Assert(!setBestMove);
                         alphaBetaCutoffs++;
+
+                        if (setBestMove)
+                        {
+                            outBestMove = transpositionTable.GetBestMove(entry);
+                        }
 
                         // TODO: Check that the lower bound should be returned here.
                         return alpha;
@@ -202,7 +218,7 @@ namespace Connect4
                 else
                 {
                     shallowTableLookups++;
-                    shallowLookup = entry.BestMove;
+                    shallowLookup = transpositionTable.GetBestMove(entry);
                 }
             }
 
@@ -279,8 +295,8 @@ namespace Connect4
                         betaCutoffs++;
 
                         // Store the current score as a lower bound on the exact score.
-                        transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
-                            state.GetTTableHash(), score, NodeType.Lower));
+                        transpositionTable.Add(searchDepth, bestMove,
+                            state.GetTTableHash(), score, NodeTypeLower);
 
                         // Remember this move as a killer move at the current depth.
                         killerMoves[1] = killerMoves[0];
@@ -310,8 +326,8 @@ namespace Connect4
                         alphaCutoffs++;
 
                         // Store the current score as an upper bound on the exact score.
-                        transpositionTable.Add(new TTableEntry(searchDepth, bestMove,
-                            state.GetTTableHash(), score, NodeType.Upper));
+                        transpositionTable.Add(searchDepth, bestMove,
+                            state.GetTTableHash(), score, NodeTypeUpper);
 
                         // Remember this move as a killer move at the current depth.
                         killerMoves[1] = killerMoves[0];
@@ -323,19 +339,12 @@ namespace Connect4
                 }
             }
 
-            // If there are no valid moves, then this is a draw.
-            if (bestMove == -1)
-            {
-                endNodesSearched++;
-
-                Debug.Assert(!setBestMove);
-                return 0;
-            }
+            Debug.Assert(bestMove != -1);
 
             // Store the score in the t-table as an exact score in case the same state is
             // reached later.
-            transpositionTable.Add(new TTableEntry(searchDepth, bestMove, state.GetTTableHash(),
-                score, NodeType.Exact));
+            transpositionTable.Add(searchDepth, bestMove, state.GetTTableHash(),
+                score, NodeTypeExact);
 
             if (setBestMove)
             {
