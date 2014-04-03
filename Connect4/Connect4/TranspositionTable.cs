@@ -8,12 +8,11 @@ namespace Connect4
 {
     class TranspositionTable
     {
-        public const int TableSize = 8306069;
-        public const int SearchSize = 1;
+        public const int TableSize = 1 << (hashIndexBits + 1);
 
         // The number of most significant bits of a state's hash to use as
         // the index into the table.
-        private const int hashIndexBits = 24;
+        private const int hashIndexBits = 22;
 
         private ulong[] table = new ulong[TableSize];
 
@@ -46,62 +45,55 @@ namespace Connect4
         {
             insertions++;
 
-            int bestIndex = 0;
-            int minDepth = 0;
-
             ulong entry = CreateEntry(depth, bestMove, hash, score, nodeType);
 
-            // Check up to searchSize entries to find the entry with the
-            // lowest depth.
-            for (ulong i = 0; i < SearchSize; i++)
+            // The index is the hashIndexBits most significant bits and a zero
+            // as the least significant bit to distinguish between the always and
+            // depth entries.
+            int index = (int)((hash >> (64 - hashIndexBits)) << 1);
+
+            ulong currentEntry = table[index];
+
+            // Use the current entry if it is empty.
+            if (currentEntry == 0)
             {
-                int index = (int)(((hash >> (64 - hashIndexBits)) + i) % TableSize);
-                ulong currentEntry = table[index];
-
-                // If an entry is null, take it regardless of the depth
-                // of other entries.
-                if (currentEntry == 0)
-                {
-                    table[index] = entry;
-                    size++;
-
-                    return;
-                }
-
-                int currentDepth = GetDepth(currentEntry);
-                if (i == 0 || minDepth > currentDepth)
-                {
-                    bestIndex = index;
-                    minDepth = currentDepth;
-                }
+                table[index] = entry;
+                size++;
             }
 
-            collisions++;
+            else
+            {
+                collisions++;
 
-            table[bestIndex] = entry;
+                // Otherwise, use the depth entry if entry is larger.
+                if (GetDepth(currentEntry) < depth)
+                {
+                    table[index] = entry;
+                }
+
+                // Use the always entry instead if the entry is smaller.
+                else
+                {
+                    table[index + 1] = entry;
+                }
+            }
         }
 
         public bool TryGet(Grid state, out ulong result)
         {
             requests++;
 
-            ulong hash = state.GetTTableHash() >> (64 - hashIndexBits);
+            int index = (int)((state.GetTTableHash() >> (64 - hashIndexBits)) << 1);
             ulong maskedHash = state.GetTTableHash() & (((ulong)1 << 45) - 1);
 
-            ulong i = 0;
-            do
+            result = table[index];
+            if (result != 0 && GetHash(result) == maskedHash)
             {
-                int index = (int)((hash + i) % TableSize);
-                result = table[index];
+                return true;
+            }
 
-                if (result != 0 && GetHash(result) == maskedHash)
-                {
-                    return true;
-                }
-                i++;
-            } while (i < SearchSize);
-
-            return false;
+            result = table[index + 1];
+            return result != 0 && GetHash(result) == maskedHash;
         }
 
         public void ResetStatistics()

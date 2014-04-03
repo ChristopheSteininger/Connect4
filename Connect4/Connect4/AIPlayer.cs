@@ -18,7 +18,7 @@ namespace Connect4
         // TODO: Parameterise this?
         private const int maxMoves = 7 * 6;
 
-        private readonly int moveLookAhead = 16;
+        private readonly int moveLookAhead = 17;
 
         private TranspositionTable transpositionTable
             = new TranspositionTable();
@@ -399,7 +399,6 @@ namespace Connect4
             log.WriteLine();
             log.WriteLine("Transposition table:");
             log.WriteLine("\tSize:                     {0:N0}", TranspositionTable.TableSize);
-            log.WriteLine("\tSearch Size:              {0:N0}", TranspositionTable.SearchSize);
             log.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
             log.WriteLine("\tLookups:                  {0:N0}", tableLookups);
             log.WriteLine("\tRequests:                 {0:N0}",
