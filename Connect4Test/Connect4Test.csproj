@@ -100,12 +100,16 @@
   <ItemGroup>
     <Compile Include="GridTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TranspositionTableTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Connect4\Connect4\Connect4.csproj">
       <Project>{024273E3-90E0-479E-A59D-71004F386714}</Project>
       <Name>Connect4</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Shadow Include="Test References\Connect4.accessor" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

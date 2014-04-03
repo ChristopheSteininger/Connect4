@@ -25,6 +25,7 @@ namespace Connect4Test
 
         private const int width = 6;
         private const int height = 6;
+        private const int seed = 103;
 
         #region Additional test attributes
         // 
@@ -65,7 +66,7 @@ namespace Connect4Test
         {
             for (int player = 0; player < 2; player++)
             {
-                Grid grid = new Grid(width, height);
+                Grid grid = new Grid(width, height, seed);
                 TileState expectedState = (TileState)player;
                 for (int row = 0; row < height; row++)
                 {
@@ -96,7 +97,7 @@ namespace Connect4Test
         [TestMethod()]
         public void MoveTestAlternatingPlayer()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             int currentPlayer = 0;
 
             for (int row = 0; row < height; row++)
@@ -134,7 +135,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverHorizontalTest()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -155,7 +156,7 @@ namespace Connect4Test
             Assert.AreEqual(true, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -176,7 +177,7 @@ namespace Connect4Test
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(true, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -240,7 +241,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverVerticalTest()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -261,7 +262,7 @@ namespace Connect4Test
             Assert.AreEqual(true, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -282,7 +283,7 @@ namespace Connect4Test
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(true, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -366,7 +367,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverPositiveDiagonalTest()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -411,7 +412,7 @@ namespace Connect4Test
             Assert.AreEqual(true, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -495,7 +496,7 @@ namespace Connect4Test
         [TestMethod()]
         public void IsGameOverNegativeDiagonalTest()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -540,7 +541,7 @@ namespace Connect4Test
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(true, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -617,7 +618,7 @@ namespace Connect4Test
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(true, grid.LazyIsGameOver(1));
 
-            grid = new Grid(width, height);
+            grid = new Grid(width, height, seed);
             Assert.AreEqual(-1, grid.IsGameOver());
             Assert.AreEqual(false, grid.LazyIsGameOver(0));
             Assert.AreEqual(false, grid.LazyIsGameOver(1));
@@ -721,7 +722,7 @@ namespace Connect4Test
         [TestMethod()]
         public void GetPlayerStreaksTest()
         {
-            Grid grid = new Grid(width, height);
+            Grid grid = new Grid(width, height, seed);
             grid.Move(0, 0);
             Assert.AreEqual(0, grid.GetPlayerStreaks(0));
             grid.Move(1, 0);
@@ -738,8 +739,8 @@ namespace Connect4Test
         {
             for (int player = 0; player < 2; player++)
             {
-                Grid referenceGrid = new Grid(width, height);
-                Grid testGrid = new Grid(width, height);
+                Grid referenceGrid = new Grid(width, height, seed);
+                Grid testGrid = new Grid(width, height, seed);
 
                 for (int y = 0; y < height; y++)
                 {
