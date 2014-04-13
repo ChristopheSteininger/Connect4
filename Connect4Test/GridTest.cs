@@ -752,7 +752,7 @@ namespace Connect4Test
                         testGrid.Move(move, player);
 
                         Assert.IsTrue(testGrid.Equals(referenceGrid));
-                        Assert.AreEqual(testGrid.GetTTableHash(), referenceGrid.GetTTableHash());
+                        Assert.AreEqual(testGrid.Hash, referenceGrid.Hash);
                     }
                 }
             }

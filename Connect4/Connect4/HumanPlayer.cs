@@ -40,7 +40,8 @@ namespace Connect4
         {
             MouseState mouseState = Mouse.GetState();
 
-            if (startY <= mouseState.Y && mouseState.Y <= endY)
+            if (startY <= mouseState.Y && mouseState.Y <= endY
+                && mouseState.X >= startX)
             {
                 highlightedColumn = (Mouse.GetState().X - startX) / columnSize;
             }

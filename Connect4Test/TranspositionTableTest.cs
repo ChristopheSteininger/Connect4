@@ -90,26 +90,30 @@ namespace Connect4Test
 
             for (int bestMove = minBestMove; bestMove <= maxBestMove; bestMove++)
             {
-                entry = table.CreateEntry(maxDepth, bestMove, hash, maxScore, maxNodeType);
-                Assert.AreEqual(bestMove, table.GetBestMove(entry));
+                entry = TranspositionTable.CreateEntry(maxDepth, bestMove, hash,
+                    maxScore, maxNodeType);
+                Assert.AreEqual(bestMove, TranspositionTable.GetBestMove(entry));
             }
 
             for (int depth = minDepth; depth <= maxDepth; depth++)
             {
-                entry = table.CreateEntry(depth, maxBestMove, hash, maxScore, maxNodeType);
-                Assert.AreEqual(depth, table.GetDepth(entry));
+                entry = TranspositionTable.CreateEntry(depth, maxBestMove, hash,
+                    maxScore, maxNodeType);
+                Assert.AreEqual(depth, TranspositionTable.GetDepth(entry));
             }
 
             for (int nodeType = minNodeType; nodeType <= maxNodeType; nodeType++)
             {
-                entry = table.CreateEntry(maxDepth, maxBestMove, hash, maxScore, nodeType);
-                Assert.AreEqual(nodeType, table.GetNodeType(entry));
+                entry = TranspositionTable.CreateEntry(maxDepth, maxBestMove, hash,
+                    maxScore, nodeType);
+                Assert.AreEqual(nodeType, TranspositionTable.GetNodeType(entry));
             }
 
             for (int score = minScore; score <= maxScore; score++)
             {
-                entry = table.CreateEntry(maxDepth, maxBestMove, hash, score, maxNodeType);
-                Assert.AreEqual(score, table.GetScore(entry));
+                entry = TranspositionTable.CreateEntry(maxDepth, maxBestMove, hash,
+                    score, maxNodeType);
+                Assert.AreEqual(score, TranspositionTable.GetScore(entry));
             }
         }
     }

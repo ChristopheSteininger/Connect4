@@ -45,7 +45,7 @@ namespace Connect4
         {
             insertions++;
 
-            ulong entry = CreateEntry(depth, bestMove, hash, score, nodeType);
+            ulong entry = TranspositionTable.CreateEntry(depth, bestMove, hash, score, nodeType);
 
             // The index is the hashIndexBits most significant bits and a zero
             // as the least significant bit to distinguish between the always and
@@ -109,7 +109,7 @@ namespace Connect4
         // Returns a ulong organised as follows:
         // Field: |-Depth-|-NodeType-|-Score-|-BestMove-|-Hash (bits 0 to 44)-|
         // Bit:   |0-----5|6--------7|8----15|16------18|19-----------------63|
-        public ulong CreateEntry(int depth, int bestMove, ulong hash, int score,
+        public static ulong CreateEntry(int depth, int bestMove, ulong hash, int score,
             int nodeType)
         {
             Debug.Assert((0 <= depth && depth <= 7 * 6) || depth == 63);
@@ -126,27 +126,27 @@ namespace Connect4
             return result;
         }
 
-        public int GetDepth(ulong data)
+        public static int GetDepth(ulong data)
         {
             return (int)(data & ((1 << 6) - 1));
         }
 
-        public int GetNodeType(ulong data)
+        public static int GetNodeType(ulong data)
         {
             return (int)((data >> 6) & ((1 << 2) - 1));
         }
 
-        public int GetScore(ulong data)
+        public static int GetScore(ulong data)
         {
             return (int)((data >> 8) & ((1 << 8) - 1)) - 128;
         }
 
-        public int GetBestMove(ulong data)
+        public static int GetBestMove(ulong data)
         {
             return (int)((data >> 16) & ((1 << 3) - 1));
         }
 
-        public ulong GetHash(ulong data)
+        public static ulong GetHash(ulong data)
         {
             return data >> 19;
         }

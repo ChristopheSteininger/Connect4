@@ -25,6 +25,7 @@ namespace Connect4
             : base(game)
         {
             //int seed = 1092552428;
+            //int seed = 2053617222;
             int seed = new Random().Next();
 
             const int AIPlayer = 0;
@@ -49,7 +50,7 @@ namespace Connect4
         {
             if (winner == -1)
             {
-                winner = PlayTurn();
+                PlayTurn();
 
                 // If the game ended on this turn, let both players know.
                 if (winner != -1)
@@ -62,11 +63,11 @@ namespace Connect4
             base.Update(gameTime);
         }
 
-        private int PlayTurn()
+        private void PlayTurn()
         {
             Debug.Assert(currentPlayer == 0 || currentPlayer == 1);
 
-            int winner = grid.IsGameOver();
+            winner = grid.IsGameOver();
 
             if (winner == -1)
             {
@@ -83,8 +84,6 @@ namespace Connect4
                     highlighedColumn = -1;
                 }
             }
-
-            return winner;
         }
 
         public override void Draw(GameTime gameTime)
