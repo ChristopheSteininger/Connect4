@@ -54,28 +54,31 @@ namespace Connect4
 
             ulong currentEntry = table[index];
 
-            // Use the current entry if it is empty.
+            // Use the depth entry if it is empty or the given entry is
+            // larger.
             if (currentEntry == 0)
             {
-                table[index] = entry;
                 size++;
+                table[index] = entry;
+            }
+
+            else if (GetDepth(currentEntry) < depth)
+            {
+                collisions++;
+                table[index] = entry;
+            }
+
+            // Otherwise, use the always entry.
+            else if (table[index + 1] == 0)
+            {
+                size++;
+                table[index + 1] = entry;
             }
 
             else
             {
                 collisions++;
-
-                // Otherwise, use the depth entry if entry is larger.
-                if (GetDepth(currentEntry) < depth)
-                {
-                    table[index] = entry;
-                }
-
-                // Use the always entry instead if the entry is smaller.
-                else
-                {
-                    table[index + 1] = entry;
-                }
+                table[index + 1] = entry;
             }
         }
 
