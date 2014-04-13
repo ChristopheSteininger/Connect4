@@ -171,7 +171,7 @@ namespace Connect4
                 int entryDepth = (int)(entry & ((1 << 6) - 1));
 
                 // The best move is stored in bits 16 to 18 of the entry.
-                int entryBestMove = (int)((entry >> 16) & ((1 << 3) - 1)); ;
+                int entryBestMove = (int)((entry >> 16) & ((1 << 3) - 1));
 
                 // If the state has been visited and searched at least as deep
                 // as needed, then return immediately or improve the alpha and
@@ -311,7 +311,7 @@ namespace Connect4
 
                         // Store the current score as a lower bound on the exact score.
                         transpositionTable.Add(searchDepth, bestMove,
-                            state.GetTTableHash(), score, NodeTypeLower);
+                            state.Hash, score, NodeTypeLower);
 
                         // Remember this move as a killer move at the current depth.
                         killerMoves[1] = killerMoves[0];
@@ -342,7 +342,7 @@ namespace Connect4
 
                         // Store the current score as an upper bound on the exact score.
                         transpositionTable.Add(searchDepth, bestMove,
-                            state.GetTTableHash(), score, NodeTypeUpper);
+                            state.Hash, score, NodeTypeUpper);
 
                         // Remember this move as a killer move at the current depth.
                         killerMoves[1] = killerMoves[0];
@@ -358,7 +358,7 @@ namespace Connect4
 
             // Store the score in the t-table as an exact score in case the same state is
             // reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.GetTTableHash(),
+            transpositionTable.Add(searchDepth, bestMove, state.Hash,
                 score, NodeTypeExact);
 
             if (setBestMove)

@@ -24,7 +24,12 @@ namespace Connect4
 
         private int seed;
         private ulong[][][] zobristTable;
+
         private ulong hash = 0;
+        public ulong Hash
+        {
+            get { return hash; }
+        }
 
         // Each ulong represents a player's pieces on the board. The first width
         // bits represent the bottom row, if the bit is 0, then the player does
@@ -186,11 +191,6 @@ namespace Connect4
 
             string horizontalBorder = "+" + new string('-', width) + "+";
             return horizontalBorder + Environment.NewLine + result + horizontalBorder;
-        }
-
-        public ulong GetTTableHash()
-        {
-            return hash;
         }
 
         public override int GetHashCode()

@@ -86,8 +86,8 @@ namespace Connect4
         {
             requests++;
 
-            int index = (int)((state.GetTTableHash() >> (64 - hashIndexBits)) << 1);
-            ulong maskedHash = state.GetTTableHash() & (((ulong)1 << 45) - 1);
+            int index = (int)((state.Hash >> (64 - hashIndexBits)) << 1);
+            ulong maskedHash = state.Hash & (((ulong)1 << 45) - 1);
 
             result = table[index];
             if (result != 0 && GetHash(result) == maskedHash)

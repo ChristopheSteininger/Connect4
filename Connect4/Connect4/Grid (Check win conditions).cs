@@ -263,10 +263,7 @@ namespace Connect4
                 for (int x = 0; x < width; x++)
                 {
                     tempMasks.Add(verticalMask);
-                    for (int i = 0; i < length; i++)
-                    {
-                        tempLazyMasks[length - 3, y + i, x].Add(verticalMask);
-                    }
+                    tempLazyMasks[length - 3, y + length - 1, x].Add(verticalMask);
 
                     verticalMask <<= 1;
                 }
