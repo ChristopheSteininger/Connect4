@@ -99,23 +99,6 @@ namespace Connect4
             return TileState.Empty;
         }
 
-        private void SetTileState(TileState state, int row, int column)
-        {
-            Debug.Assert(GetTileState(row, column) == TileState.Empty);
-
-            ulong mask = (ulong)1 << (column + row * width);
-            playerPositions[(int)state] |= mask;
-        }
-
-        private void ClearTile(int row, int column)
-        {
-            Debug.Assert(GetTileState(row, column) != TileState.Empty);
-
-            ulong mask = ~((ulong)1 << (column + row * width));
-            playerPositions[0] &= mask;
-            playerPositions[1] &= mask;
-        }
-
         public bool IsValidMove(int column, int row)
         {
             return IsValidMove(column) && 0 <= row && row < height
@@ -135,13 +118,16 @@ namespace Connect4
         public void Move(int column, int player)
         {
             Debug.Assert(0 <= column && column < width);
-            Debug.Assert(nextFreeTile[column] < height);
+
+            int row = nextFreeTile[column];
+            Debug.Assert(row < height);
+            Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
             // Update the hash value.
-            hash ^= zobristTable[nextFreeTile[column]][column][player];
+            hash ^= zobristTable[row][column][player];
 
             // Update the board.
-            SetTileState((TileState)player, nextFreeTile[column], column);
+            playerPositions[player] |= (ulong)1 << (column + row * width);
             nextFreeTile[column]++;
 
             lastMove = column;
@@ -153,21 +139,21 @@ namespace Connect4
         public void UndoMove(int column, int player)
         {
             Debug.Assert(0 <= column && column < width);
-            Debug.Assert(0 < nextFreeTile[column] && nextFreeTile[column] <= height);
-            Debug.Assert(GetTileState(nextFreeTile[column] - 1, column) == (TileState)player);
 
             // Update the 3 piece streak count.
             LazyUpdatePlayerStreaks(player, column, false);
 
             lastMove = -1;
 
-            nextFreeTile[column]--;
+            int row = --nextFreeTile[column];
+            Debug.Assert(0 <= row && row < height);
+            Debug.Assert(GetTileState(row, column) != TileState.Empty);
 
             // Restore the board.
-            ClearTile(nextFreeTile[column], column);
+            playerPositions[player] &= ~((ulong)1 << (column + row * width));
 
             // Restore the hash value.
-            hash ^= zobristTable[nextFreeTile[column]][column][player];
+            hash ^= zobristTable[row][column][player];
         }
 
         public override string ToString()

@@ -25,6 +25,8 @@ namespace Connect4
 
         private int[][] killerMovesTable;
 
+        // The default move ordering if no killer moves or shallow moves are
+        // available.
         private int[] staticMoveOrdering = new int[] { 1, 5, 4, 3, 2, 0, 6 };
 
         private int moveNumber = 0;
@@ -165,34 +167,46 @@ namespace Connect4
             ulong entry;
             if (transpositionTable.TryGet(state, out entry))
             {
+                // The depth is stored in bits 0 to 5 of the entry.
+                int entryDepth = (int)(entry & ((1 << 6) - 1));
+
+                // The best move is stored in bits 16 to 18 of the entry.
+                int entryBestMove = (int)((entry >> 16) & ((1 << 3) - 1)); ;
+
                 // If the state has been visited and searched at least as deep
                 // as needed, then return immediately or improve the alpha and
                 // beta values depending on the node type.
-                if (transpositionTable.GetDepth(entry) >= searchDepth)
+                if (entryDepth >= searchDepth)
                 {
                     tableLookups++;
 
-                    switch (transpositionTable.GetNodeType(entry))
+                    // The score is stored in bits 8 to 15 of the entry.
+                    int entryScore = (int)((entry >> 8) & ((1 << 8) - 1)) - 128;
+
+                    // The type is stored in bits 6 to 7 of the entry.
+                    int entryType = (int)((entry >> 6) & ((1 << 2) - 1));
+
+                    switch (entryType)
                     {
                         // If the score is exact, there is no need to check anything
                         // else, so return the score of the entry.
                         case NodeTypeExact:
                             if (setBestMove)
                             {
-                                outBestMove = transpositionTable.GetBestMove(entry);
+                                outBestMove = entryBestMove;
                             }
-                            return transpositionTable.GetScore(entry);
+                            return entryScore;
 
                         // If the entry score is an upper bound on the actual score,
                         // see if the current upper bound can be reduced.
                         case NodeTypeUpper:
-                            beta = Math.Min(beta, transpositionTable.GetScore(entry));
+                            beta = Math.Min(beta, entryScore);
                             break;
 
                         // If the entry score is a lower bound on the actual score,
                         // see if the current lower bound can be increased.
                         case NodeTypeLower:
-                            alpha = Math.Max(alpha, transpositionTable.GetScore(entry));
+                            alpha = Math.Max(alpha, entryScore);
                             break;
                     }
 
@@ -204,7 +218,7 @@ namespace Connect4
 
                         if (setBestMove)
                         {
-                            outBestMove = transpositionTable.GetBestMove(entry);
+                            outBestMove = entryBestMove;
                         }
 
                         // TODO: Check that the lower bound should be returned here.
@@ -218,8 +232,9 @@ namespace Connect4
                 else
                 {
                     shallowTableLookups++;
-                    shallowLookup = transpositionTable.GetBestMove(entry);
                 }
+
+                shallowLookup = entryBestMove;
             }
 
             bool maximise = currentPlayer == player;
@@ -271,7 +286,7 @@ namespace Connect4
                 }
 
                 // At this point, the move has been found, so mark the move
-                // as invalid.
+                // as invalid for future iterations.
                 checkedMoves |= moveMask;
 
                 // Apply the move and recurse.
