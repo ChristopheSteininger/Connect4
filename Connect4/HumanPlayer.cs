@@ -5,51 +5,46 @@ using System.Text;
 
 namespace Connect4
 {
-    class HumanPlayer //: Player
+    class HumanPlayer : Player
     {
-        //private int highlightedColumn = -1;
+        private int highlightedColumn = -1;
 
-        //private MouseState oldMouseState;
-        //private List<Keys> numberKeys = new List<Keys>();
+        public HumanPlayer(int player)
+            : base(player)
+        {
+        }
 
-        //public HumanPlayer(int player)
-        //    : base(player)
-        //{
-        //    numberKeys.AddRange(new Keys[] { Keys.D1, Keys.D2, Keys.D3,
-        //            Keys.D4, Keys.D5, Keys.D6 });
-        //}
+        public override int GetMove(Grid grid)
+        {
+            int move = -1;
 
-        //public override int GetMove(Grid grid)
-        //{
-        //    int move = -1;
+            //if (Mouse.GetState().LeftButton == ButtonState.Pressed
+            //    && oldMouseState.LeftButton == ButtonState.Released)
+            //{
+            //    move = highlightedColumn;
+            //}
 
-        //    if (Mouse.GetState().LeftButton == ButtonState.Pressed
-        //        && oldMouseState.LeftButton == ButtonState.Released)
-        //    {
-        //        move = highlightedColumn;
-        //    }
+            //oldMouseState = Mouse.GetState();
 
-        //    oldMouseState = Mouse.GetState();
+            return move;
+        }
 
-        //    return move;
-        //}
+        public override int HighlightColumn(int startX, int startY, int endY,
+            int columnSize)
+        {
+            //MouseState mouseState = Mouse.GetState();
 
-        //public override int HighlightColumn(int startX, int startY, int endY,
-        //    int columnSize)
-        //{
-        //    MouseState mouseState = Mouse.GetState();
+            //if (startY <= mouseState.Y && mouseState.Y <= endY
+            //    && mouseState.X >= startX)
+            //{
+            //    highlightedColumn = (Mouse.GetState().X - startX) / columnSize;
+            //}
+            //else
+            //{
+            //    highlightedColumn = -1;
+            //}
 
-        //    if (startY <= mouseState.Y && mouseState.Y <= endY
-        //        && mouseState.X >= startX)
-        //    {
-        //        highlightedColumn = (Mouse.GetState().X - startX) / columnSize;
-        //    }
-        //    else
-        //    {
-        //        highlightedColumn = -1;
-        //    }
-
-        //    return highlightedColumn;
-        //}
+            return highlightedColumn;
+        }
     }
 }

@@ -45,7 +45,7 @@ namespace Connect4
         {
             insertions++;
 
-            ulong entry = TranspositionTable.CreateEntry(depth, bestMove, hash, score, nodeType);
+            ulong entry = CreateEntry(depth, bestMove, hash, score, nodeType);
 
             // The index is the hashIndexBits most significant bits and a zero
             // as the least significant bit to distinguish between the always and

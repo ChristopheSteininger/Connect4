@@ -4,8 +4,6 @@ using System;
 
 namespace Connect4Test
 {
-    
-    
     /// <summary>
     ///This is a test class for TranspositionTableTest and is intended
     ///to contain all TranspositionTableTest Unit Tests
@@ -13,8 +11,6 @@ namespace Connect4Test
     [TestClass()]
     public class TranspositionTableTest
     {
-
-
         private TestContext testContextInstance;
 
         /// <summary>
@@ -23,14 +19,8 @@ namespace Connect4Test
         ///</summary>
         public TestContext TestContext
         {
-            get
-            {
-                return testContextInstance;
-            }
-            set
-            {
-                testContextInstance = value;
-            }
+            get { return testContextInstance; }
+            set { testContextInstance = value; }
         }
 
         #region Additional test attributes

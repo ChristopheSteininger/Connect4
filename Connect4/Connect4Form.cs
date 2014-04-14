@@ -9,11 +9,15 @@ using System.Windows.Forms;
 
 namespace Connect4
 {
-    public partial class Form1 : Form
+    public partial class Connect4Form : Form
     {
-        public Form1()
+        private Board board;
+
+        public Connect4Form()
         {
             InitializeComponent();
+
+            board = new Board(7, 6, plBoard);
         }
     }
 }
