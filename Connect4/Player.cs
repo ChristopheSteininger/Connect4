@@ -8,22 +8,20 @@ namespace Connect4
     abstract class Player
     {
         protected readonly int player;
+        protected readonly Board board;
 
-        public Player(int player)
+        public Player(int player, Board board)
         {
             this.player = player;
+            this.board = board;
         }
 
-        public abstract int GetMove(Grid grid);
+        public virtual void BeginMove()
+        {
+        }
 
         public virtual void GameOver(bool winner)
         {
-        }
-
-        public virtual int HighlightColumn(int startX, int startY,
-            int endY, int columns)
-        {
-            return -1;
         }
     }
 }

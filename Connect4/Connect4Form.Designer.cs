@@ -49,6 +49,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(529, 526);
             this.Controls.Add(this.plBoard);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Name = "Connect4Form";
             this.Text = "Connect 4";
             this.ResumeLayout(false);

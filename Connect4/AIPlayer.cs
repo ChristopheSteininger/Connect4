@@ -42,18 +42,18 @@ namespace Connect4
         private int betaCutoffs;
         private double totalRuntime = 0;
 
-        public AIPlayer(int player, int seed)
-            : base(player)
+        public AIPlayer(int player, Board board)
+            : base(player, board)
         {
-            CreateAIPlayer(seed);
+            CreateAIPlayer(board.Seed);
         }
 
-        public AIPlayer(int player, int moveLookAhead, int seed)
-            : base(player)
+        public AIPlayer(int player, int moveLookAhead, Board board)
+            : base(player, board)
         {
             this.moveLookAhead = moveLookAhead;
 
-            CreateAIPlayer(seed);
+            CreateAIPlayer(board.Seed);
         }
 
         private void CreateAIPlayer(int seed)
@@ -71,8 +71,10 @@ namespace Connect4
             log = new AILog(player, seed, moveLookAhead, printToConsole);
         }
 
-        public override int GetMove(Grid grid)
+        public override void BeginMove()
         {
+            Grid grid = board.Grid;
+
             Debug.Assert(grid.Width == 7);
             Debug.Assert(grid.Height == 6);
 
@@ -110,7 +112,7 @@ namespace Connect4
 
             moveNumber += 2;
 
-            return bestMove;
+            board.Move(bestMove, player);
         }
 
         public override void GameOver(bool winner)

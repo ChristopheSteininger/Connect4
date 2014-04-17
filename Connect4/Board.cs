@@ -15,6 +15,8 @@ namespace Connect4
         private Grid grid;
         private int winner = -1;
 
+        private int seed;
+
         private int highlighedColumn = 3;
         private int boardStartX;
         private int boardStartY;
@@ -22,68 +24,82 @@ namespace Connect4
         private Panel panel;
         private Image disc;
 
+        public int Seed { get { return seed; } }
+        public Panel BoardPanel { get { return panel; } }
+        public Grid Grid { get { return grid; } }
+
         public Board(int gridWidth, int gridHeight, Panel panel)
         {
-            //int seed = 1092552428;
-            //int seed = 2053617222;
-            int seed = new Random().Next();
-
-            const int AIPlayer = 0;
-            const int humanPlayer = 1;
-
-            this.players[AIPlayer] = new AIPlayer(AIPlayer, seed);
-            this.players[humanPlayer] = new HumanPlayer(humanPlayer);
-
-            this.grid = new Grid(gridWidth, gridHeight, seed);
-            grid.Move(3, 0);
-            grid.Move(0, 1);
-            grid.Move(6, 0);
-
             this.panel = panel;
+            panel.Paint += new PaintEventHandler(panel_Paint);
+            panel.MouseMove += new MouseEventHandler(panel_MouseMove);
 
             const string discImageLocation = "../../disc.png";
             Debug.Assert(File.Exists(discImageLocation));
             this.disc = Image.FromFile(discImageLocation);
 
-            panel.Paint += new PaintEventHandler(panel_Paint);
+            //seed = 1092552428;
+            //seed = 2053617222;
+            seed = new Random().Next();
+
+            const int AIPlayer = 0;
+            const int humanPlayer = 1 - AIPlayer;
+
+            players[AIPlayer] = new AIPlayer(AIPlayer, this);
+            players[humanPlayer] = new HumanPlayer(humanPlayer, this);
+
+            this.grid = new Grid(gridWidth, gridHeight, seed);
+
+            players[currentPlayer].BeginMove();
         }
 
-        public void Update()
+        public void MoveWithHighlightedColumn(int player)
         {
-            if (winner == -1)
+            Move(highlighedColumn, player);
+        }
+
+        public void Move(int move, int player)
+        {
+            // Ignore the move if it is the wrong player, not a valid move
+            // or if the game is over.
+            if (player != currentPlayer || !grid.IsValidMove(move)
+                || winner != -1)
             {
-                PlayTurn();
-
-                // If the game ended on this turn, let both players know.
-                if (winner != -1)
-                {
-                    players[0].GameOver(winner == 0);
-                    players[1].GameOver(winner == 1);
-                }
+                return;
             }
-        }
 
-        private void PlayTurn()
-        {
-            Debug.Assert(currentPlayer == 0 || currentPlayer == 1);
+            grid.Move(move, player);
+            currentPlayer = 1 - currentPlayer;
+            highlighedColumn = -1;
 
             winner = grid.IsGameOver();
-
-            if (winner == -1)
+            if (winner != -1)
             {
-                highlighedColumn = players[currentPlayer].HighlightColumn(
-                    boardStartX, boardStartY, boardStartY + grid.Height * disc.Height,
-                    disc.Width);
-                int move = players[currentPlayer].GetMove(grid);
-
-                if (grid.IsValidMove(move))
-                {
-                    grid.Move(move, currentPlayer);
-
-                    currentPlayer = 1 - currentPlayer;
-                    highlighedColumn = -1;
-                }
+                players[0].GameOver(winner == 0);
+                players[1].GameOver(winner == 1);
             }
+
+            Draw();
+
+            players[currentPlayer].BeginMove();
+        }
+
+        void panel_MouseMove(object sender, MouseEventArgs e)
+        {
+            int mouseY = panel.Height - e.Y;
+            int mouseX = e.X;
+            if (boardStartY <= mouseY && mouseY <= boardStartY + grid.Height * disc.Height
+                && mouseX >= boardStartX && winner == -1)
+            {
+                highlighedColumn = (e.X - boardStartX) / disc.Width;
+            }
+
+            else
+            {
+                highlighedColumn = -1;
+            }
+
+            Draw();
         }
 
         private void panel_Paint(object sender, PaintEventArgs e)
@@ -94,7 +110,6 @@ namespace Connect4
         private void Draw()
         {
             Graphics graphics = panel.CreateGraphics();
-            graphics.Clear(panel.BackColor);
 
             boardStartX = (panel.Width - grid.Width * disc.Width) / 2;
             boardStartY = (panel.Height - grid.Height * disc.Height) / 2;
