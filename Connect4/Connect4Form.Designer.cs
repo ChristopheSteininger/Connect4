@@ -42,6 +42,9 @@
             this.plBoard.Name = "plBoard";
             this.plBoard.Size = new System.Drawing.Size(500, 500);
             this.plBoard.TabIndex = 0;
+            this.plBoard.Paint += new System.Windows.Forms.PaintEventHandler(this.plBoard_Paint);
+            this.plBoard.MouseClick += new System.Windows.Forms.MouseEventHandler(this.plBoard_MouseClick);
+            this.plBoard.MouseMove += new System.Windows.Forms.MouseEventHandler(this.plBoard_MouseMove);
             // 
             // Connect4Form
             // 

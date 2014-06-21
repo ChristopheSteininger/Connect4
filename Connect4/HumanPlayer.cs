@@ -11,10 +11,9 @@ namespace Connect4
         public HumanPlayer(int player, Board board)
             : base(player, board)
         {
-            board.BoardPanel.MouseClick += new MouseEventHandler(panel_MouseClick);
         }
 
-        void panel_MouseClick(object sender, MouseEventArgs e)
+        public override void OnClick()
         {
             board.MoveWithHighlightedColumn(player);
         }

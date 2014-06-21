@@ -65,6 +65,7 @@
     <Compile Include="Grid %28Check win conditions%29.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="HumanPlayer.cs" />
+    <Compile Include="IBoardDrawer.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

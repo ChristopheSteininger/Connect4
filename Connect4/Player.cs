@@ -16,6 +16,10 @@ namespace Connect4
             this.board = board;
         }
 
+        public virtual void OnClick()
+        {
+        }
+
         public virtual void BeginMove()
         {
         }
