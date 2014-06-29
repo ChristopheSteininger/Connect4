@@ -72,6 +72,8 @@ namespace Connect4
         // game. Also update the most recent shortcut log files.
         public void EndGame(bool AIWon)
         {
+            WriteLine("The AI " + (AIWon ? "wins" : "loses") + "!");
+
             CopyLogTo(mostRecentGameLog);
 
             if (AIWon)

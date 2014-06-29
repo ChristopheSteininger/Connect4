@@ -11,7 +11,7 @@ namespace Connect4
         public const int TableSize = 1 << (hashIndexBits + 1);
 
         // The number of most significant bits of a state's hash to use as
-        // the index into the table.
+        // the index into the table. Do not mess around with this constant.
         private const int hashIndexBits = 22;
 
         private ulong[] table = new ulong[TableSize];
@@ -121,7 +121,8 @@ namespace Connect4
             result |= (ulong)nodeType << 6;
             result |= (ulong)(score + 128) << 8;
             result |= (ulong)bestMove << 16;
-            result |= hash << 19;
+            result |= hash << 19; // This erases the 19 most significant bits, but
+                                  // they can be retrived from the index instead.
 
             return result;
         }
