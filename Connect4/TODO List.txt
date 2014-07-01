@@ -1,0 +1,8 @@
+﻿* Parallel Minimax.
+  - http://www.pressibus.org/ataxx/autre/minimax/paper.html is a good starting point.
+
+* The Move()/UndoMove() methods are the new bottlenecks.
+  - Move 'nextFreeTile' array into 'playerPositions'?
+
+* Generate opening moves database.
+  - Verify with http://archive.ics.uci.edu/ml/datasets/Connect-4.

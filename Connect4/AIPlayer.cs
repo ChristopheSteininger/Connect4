@@ -97,18 +97,26 @@ namespace Connect4
             grid.UpdateLazyStreakCountForPlayer[player] = true;
             grid.UpdateLazyStreakCountForPlayer[1 - player] = false;
 
+            // Calculate the depth of this search.
+            int iterations = Math.Min(moveLookAhead, maxMoves - moveNumber);
+
+            // The runtime of each iteration in milliseconds.
+            double[] runtimes = new double[iterations];
+
             // Get the best move and measure the runtime.
-            DateTime startTime = DateTime.Now;
-            for (int depth = 1; depth < moveLookAhead && moveNumber + depth <= maxMoves; depth++)
+            for (int depth = 1; depth <= iterations; depth++)
             {
+                DateTime startTime = DateTime.Now;
+
                 score = Minimax(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
                 grid.ClearMoveHistory();
-            }
-            double runtime = (DateTime.Now - startTime).TotalMilliseconds;
-            totalRuntime += runtime;
 
-            PrintMoveStatistics(runtime, grid, bestMove, score);
+                runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
+                totalRuntime += runtimes[depth - 1];
+            }
+
+            PrintMoveStatistics(runtimes, grid, bestMove, score);
 
             moveNumber += 2;
 
@@ -127,15 +135,6 @@ namespace Connect4
 
             totalNodesSearched++;
 
-            // If there are no valid moves, then this is a draw.
-            if (currentDepth >= maxMoves)
-            {
-                endNodesSearched++;
-
-                Debug.Assert(!setBestMove);
-                return 0;
-            }
-
             // Check if the previous player won on the last move.
             if (state.LazyIsGameOver(1 - currentPlayer))
             {
@@ -151,6 +150,15 @@ namespace Connect4
 
                 // Return the minimum value if the opposing player won the game.
                 return -infinity;
+            }
+
+            // If there are no valid moves, then this is a draw.
+            if (currentDepth >= maxMoves)
+            {
+                endNodesSearched++;
+
+                Debug.Assert(!setBestMove);
+                return 0;
             }
 
             // Evaluate the state if this is a terminal state.
@@ -369,9 +377,16 @@ namespace Connect4
             return score;
         }
 
-        private void PrintMoveStatistics(double runtime, Grid grid, int move, int score)
+        private void PrintMoveStatistics(double[] runtimes, Grid grid, int move, int score)
         {
             log.WriteLine("Done");
+
+            // Calculate the total runtime.
+            double runtime = 0;
+            for (int i = 0; i < runtimes.Length; i++)
+            {
+                runtime += runtimes[i];
+            }
 
             // Print the grid before the AI's move to the log file.
             log.WriteLineToLog();
@@ -408,6 +423,31 @@ namespace Connect4
             else
             {
                 log.WriteLine("Move score is {0:N0}.", score);
+            }
+
+            // Print the runtime of each iteration.
+            log.WriteLine();
+            log.WriteLine("Iteration runtimes:");
+
+            for (int i = 0; i < runtimes.Length; i++)
+            {
+                log.Write(" +{0,-2}: {1,8:N2} ms", i + 1, runtimes[i]);
+
+                // Print the percentage of time spent in this iteration.
+                log.Write(", {0,5:N2}%", runtimes[i] * 100 / totalRuntime);
+
+                // Print how much longer this iteration took than the last.
+                if (i > 0)
+                {
+                    double increase = runtimes[i] / runtimes[i - 1];
+                    if (!Double.IsInfinity(increase) && !Double.IsNaN(increase)
+                        && increase > 0.1)
+                    {
+                        log.Write(" (\u00D7 {0:N2})", increase);
+                    }
+                }
+
+                log.WriteLine();
             }
 
             // Print transposition table statistics.

@@ -35,9 +35,9 @@ namespace Connect4
             const int humanPlayer = 1 - AIPlayer;
 
             // Test seeds:
-            //seed = 1092552428;
+            seed = 1092552428;
             //seed = 2053617222;
-            seed = new Random().Next();
+            //seed = new Random().Next();
 
             players[AIPlayer] = new AIPlayer(AIPlayer, this);
             players[humanPlayer] = new HumanPlayer(humanPlayer, this);

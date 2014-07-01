@@ -90,13 +90,13 @@ namespace Connect4
             ulong maskedHash = state.Hash & (((ulong)1 << 45) - 1);
 
             result = table[index];
-            if (result != 0 && GetHash(result) == maskedHash)
+            if (result != 0 && (result >> 19) == maskedHash)
             {
                 return true;
             }
 
             result = table[index + 1];
-            return result != 0 && GetHash(result) == maskedHash;
+            return result != 0 && (result >> 19) == maskedHash;
         }
 
         public void ResetStatistics()
