@@ -1,8 +1,21 @@
-﻿* Parallel Minimax.
-  - http://www.pressibus.org/ataxx/autre/minimax/paper.html is a good starting point.
-
-* The Move()/UndoMove() methods are the new bottlenecks.
-  - Move 'nextFreeTile' array into 'playerPositions'?
-
-* Generate opening moves database.
+﻿* Generate opening moves database.
   - Verify with http://archive.ics.uci.edu/ml/datasets/Connect-4.
+  - Should be one of the last steps of the project as the remaining optimisations and
+    testing must be completed first.
+
+* Optimise.
+  - Improve the evaluation function.
+    > Ignore 3 piece streaks which are blocked on either side. This will hurt the nodes
+      per second but could be used for better move ordering and in turn reduce the number
+      of nodes to search.
+    > The 3 piece streak may not even be a good heuristic.
+  - Parallel Minimax.
+    > http://www.pressibus.org/ataxx/autre/minimax/paper.html is a good starting point.
+  - The Move()/UndoMove() methods are the new bottlenecks.
+    > Move 'nextFreeTile' array into 'playerPositions'?
+
+* Testing.
+  - Whole system test: create an auto player which systematically plays, at least,
+    thousands of games against the AI.
+  - More unit tests.
+  - More assertions.

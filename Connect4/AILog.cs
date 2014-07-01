@@ -6,7 +6,7 @@ namespace Connect4
     class AILog
     {
         // Log folders.
-        private const String logRootFolder = "Logs\\";
+        private const String logRootFolder = "..\\Logs\\";
         private const String allFolder     = logRootFolder + "All Logs\\";
         private const String winFolder     = logRootFolder + "Win Log Copies\\";
         private const String lossFolder    = logRootFolder + "Loss Log Copies\\";
