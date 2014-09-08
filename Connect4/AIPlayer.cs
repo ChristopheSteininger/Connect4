@@ -108,7 +108,7 @@ namespace Connect4
             {
                 DateTime startTime = DateTime.Now;
 
-                score = Minimax(moveNumber, moveNumber + depth, grid, player, -infinity,
+                score = NegaMax(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
                 grid.ClearMoveHistory();
 
@@ -128,12 +128,14 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int Minimax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
+        private int NegaMax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
             int alpha, int beta, ref int outBestMove, bool setBestMove)
         {
             Debug.Assert(currentDepth <= searchDepth);
 
             totalNodesSearched++;
+
+            int alphaOrig = alpha;
 
             // Check if the previous player won on the last move.
             if (state.LazyIsGameOver(1 - currentPlayer))
@@ -141,23 +143,16 @@ namespace Connect4
                 Debug.Assert(!setBestMove);
                 endNodesSearched++;
 
-                // Return the maximum value if the player won the game
-                // on the last move.
-                if (currentPlayer != player)
-                {
-                    return infinity;
-                }
-
-                // Return the minimum value if the opposing player won the game.
+                // Return the minimum value since the opposing player won the game.
                 return -infinity;
             }
 
             // If there are no valid moves, then this is a draw.
             if (currentDepth >= maxMoves)
             {
+                Debug.Assert(!setBestMove);
                 endNodesSearched++;
 
-                Debug.Assert(!setBestMove);
                 return 0;
             }
 
@@ -165,6 +160,7 @@ namespace Connect4
             if (currentDepth == searchDepth)
             {
                 Debug.Assert(!setBestMove);
+
                 return state.StreakCount[player];
             }
 
@@ -229,8 +225,7 @@ namespace Connect4
                             outBestMove = entryBestMove;
                         }
 
-                        // TODO: Check that the lower bound should be returned here.
-                        return alpha;
+                        return entryScore;
                     }
                 }
 
@@ -245,10 +240,9 @@ namespace Connect4
                 shallowLookup = entryBestMove;
             }
 
-            bool maximise = currentPlayer == player;
             int bestMove = -1;
             int dummy = 0;
-            int score = (maximise) ? int.MinValue : int.MaxValue;
+            int score = int.MinValue;
 
             int[] killerMoves = killerMovesTable[currentDepth];
             int orderedMoves = 1 + killerMovesEntrySize;
@@ -299,27 +293,43 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-                int childScore = Minimax(currentDepth + 1, searchDepth, state, 1 - currentPlayer,
-                    alpha, beta, ref dummy, false);
+                int childScore = -NegaMax(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -beta, -alpha, ref dummy, false);
                 state.UndoMove(move, currentPlayer);
 
-                // If it is the maximising player's turn and this is a new maximum,
-                // update alpha and check for a beta cutoff.
-                if (maximise && childScore > score)
+                // TODO: Will childScore always be greater than alpha inside
+                // the if statement.
+                alpha = Math.Max(alpha, childScore);
+
+                // If this move is the best so far.
+                if (childScore > score)
                 {
                     score = childScore;
-                    alpha = childScore;
                     bestMove = move;
 
-                    // beta cutoff
-                    if (score >= beta)
+                    // If this is an alpha or beta cutoff.
+                    if (alpha >= beta)
                     {
                         alphaBetaCutoffs++;
-                        betaCutoffs++;
+
+                        int flag;
+
+                        // beta cutoff.
+                        if (score <= alphaOrig)
+                        {
+                            betaCutoffs++;
+                            flag = NodeTypeUpper;
+                        }
+
+                        // alpha cutoff.
+                        else
+                        {
+                            alphaCutoffs++;
+                            flag = NodeTypeLower;
+                        }
 
                         // Store the current score as a lower bound on the exact score.
-                        transpositionTable.Add(searchDepth, bestMove,
-                            state.Hash, score, NodeTypeLower);
+                        transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
 
                         // Remember this move as a killer move at the current depth.
                         killerMoves[1] = killerMoves[0];
@@ -333,41 +343,13 @@ namespace Connect4
                         return score;
                     }
                 }
-
-                // If this is the minimising player's turn and this is new minimum,
-                // update beta and check for alpha cutoff.
-                else if (!maximise && childScore < score)
-                {
-                    score = childScore;
-                    beta = childScore;
-                    bestMove = move;
-
-                    // alpha cutoff.
-                    if (score <= alpha)
-                    {
-                        alphaBetaCutoffs++;
-                        alphaCutoffs++;
-
-                        // Store the current score as an upper bound on the exact score.
-                        transpositionTable.Add(searchDepth, bestMove,
-                            state.Hash, score, NodeTypeUpper);
-
-                        // Remember this move as a killer move at the current depth.
-                        killerMoves[1] = killerMoves[0];
-                        killerMoves[0] = bestMove;
-
-                        Debug.Assert(!setBestMove);
-                        return score;
-                    }
-                }
             }
 
             Debug.Assert(bestMove != -1);
 
             // Store the score in the t-table as an exact score in case the same state is
             // reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash,
-                score, NodeTypeExact);
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, NodeTypeExact);
 
             if (setBestMove)
             {

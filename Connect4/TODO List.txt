@@ -19,3 +19,13 @@
     thousands of games against the AI.
   - More unit tests.
   - More assertions.
+  - Print the score of each move. The iterative deepening loop will check the scores of each
+    possible move to find the best move. The results on the empty board should be:
+      Column 0: Heavy Loss
+      Column 1: Loss
+      Column 2: Draw
+      Column 3: Win
+      Column 4: Draw
+      Column 5: Loss
+      Column 6: Heavy Loss
+    This will also simplify the NegaMax function by removing the last two arguments.
