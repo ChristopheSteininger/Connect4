@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Connect4
 {
@@ -73,6 +74,24 @@ namespace Connect4
 
         public override void BeginMove()
         {
+            // Run CalculateNextMove in a worker thread, then call MakeMove in the
+            // main thread.
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.DoWork += new DoWorkEventHandler(CalculateNextMove);
+            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(MakeMove);
+
+            worker.RunWorkerAsync();
+        }
+
+        void MakeMove(object sender, RunWorkerCompletedEventArgs e)
+        {
+            int move = (int)e.Result;
+
+            board.Move(move, player);
+        }
+
+        private void CalculateNextMove(object sender, DoWorkEventArgs e)
+        {
             Grid grid = board.Grid;
 
             Debug.Assert(grid.Width == 7);
@@ -120,7 +139,8 @@ namespace Connect4
 
             moveNumber += 2;
 
-            board.Move(bestMove, player);
+            // Store the result so the main thread can make the move.
+            e.Result = bestMove;
         }
 
         public override void GameOver(bool winner)
@@ -315,6 +335,7 @@ namespace Connect4
                         int flag;
 
                         // beta cutoff.
+                        // TODO: This condition is never true.
                         if (score <= alphaOrig)
                         {
                             betaCutoffs++;
@@ -332,6 +353,7 @@ namespace Connect4
                         transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
 
                         // Remember this move as a killer move at the current depth.
+                        // TODO: Add killer moves as a parameter?
                         killerMoves[1] = killerMoves[0];
                         killerMoves[0] = bestMove;
 

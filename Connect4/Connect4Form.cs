@@ -43,7 +43,8 @@ namespace Connect4
             int mouseY = plBoard.Height - e.Y;
             int mouseX = e.X;
 
-            if (boardStartY <= mouseY && mouseY <= boardStartY + board.Grid.Height * disc.Height
+            if (boardStartY <= mouseY
+                && mouseY <= boardStartY + board.GridCopy.GetLength(0)* disc.Height
                 && mouseX >= boardStartX && !board.IsGameOver)
             {
                 board.HighlightedColumn = (e.X - boardStartX) / disc.Width;
@@ -66,22 +67,26 @@ namespace Connect4
         {
             Graphics graphics = plBoard.CreateGraphics();
 
-            boardStartX = (plBoard.Width - board.Grid.Width * disc.Width) / 2;
-            boardStartY = (plBoard.Height - board.Grid.Height * disc.Height) / 2;
+            int height = board.GridCopy.GetLength(0);
+            int width = board.GridCopy.GetLength(1);
 
-            for (int y = 0; y < board.Grid.Height; y++)
+            // TODO: Lock the grid?
+            boardStartX = (plBoard.Width - width * disc.Width) / 2;
+            boardStartY = (plBoard.Height - height * disc.Height) / 2;
+
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < board.Grid.Width; x++)
+                for (int x = 0; x < width; x++)
                 {
                     Color[] playerColors = { Color.Yellow, Color.Red, Color.White };
                     Color[] fadedPlayerColors = { Color.FromArgb(150, 150, 0),
                                                     Color.FromArgb(150, 0, 0) };
 
-                    Color color = playerColors[(int)board.Grid[y, x]];
+                    Color color = playerColors[(int)board.GridCopy[y, x]];
 
-                    if (board.Grid[y, x] == TileState.Empty && x == board.HighlightedColumn)
+                    if (board.GridCopy[y, x] == TileState.Empty && x == board.HighlightedColumn)
                     {
-                        if (board.Grid.IsValidMove(x, y))
+                        if (board.IsValidMove(x, y))
                         {
                             color = fadedPlayerColors[board.CurrentPlayer];
                         }
@@ -93,7 +98,7 @@ namespace Connect4
                     }
 
                     Point position = new Point(boardStartX + x * disc.Width,
-                        boardStartY + (board.Grid.Height - y - 1) * disc.Height);
+                        boardStartY + (height - y - 1) * disc.Height);
 
                     graphics.DrawImage(disc, new Rectangle(position,
                         new Size(disc.Width, disc.Height)), 0, 0, disc.Width, disc.Height,

@@ -29,3 +29,5 @@
       Column 5: Loss
       Column 6: Heavy Loss
     This will also simplify the NegaMax function by removing the last two arguments.
+
+* Improve the interaction between the Board class and the form.
