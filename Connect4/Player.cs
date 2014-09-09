@@ -20,7 +20,7 @@ namespace Connect4
         {
         }
 
-        public virtual void BeginMove()
+        public virtual void BeginMove(Grid grid)
         {
         }
 

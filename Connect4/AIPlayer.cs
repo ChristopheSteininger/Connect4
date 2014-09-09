@@ -72,7 +72,7 @@ namespace Connect4
             log = new AILog(player, seed, moveLookAhead, printToConsole);
         }
 
-        public override void BeginMove()
+        public override void BeginMove(Grid grid)
         {
             // Run CalculateNextMove in a worker thread, then call MakeMove in the
             // main thread.
@@ -80,7 +80,7 @@ namespace Connect4
             worker.DoWork += new DoWorkEventHandler(CalculateNextMove);
             worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(MakeMove);
 
-            worker.RunWorkerAsync();
+            worker.RunWorkerAsync(grid);
         }
 
         void MakeMove(object sender, RunWorkerCompletedEventArgs e)
@@ -92,7 +92,7 @@ namespace Connect4
 
         private void CalculateNextMove(object sender, DoWorkEventArgs e)
         {
-            Grid grid = board.Grid;
+            Grid grid = (Grid)e.Argument;
 
             Debug.Assert(grid.Width == 7);
             Debug.Assert(grid.Height == 6);

@@ -1,24 +1,22 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Connect4
 {
     enum TileState { Player1 = 0, Player2 = 1, Empty = 2 }
 
+    [Serializable()]
     partial class Grid
     {
         private readonly int width;
-        public int Width
-        {
-            get { return width; }
-        }
+        public int Width { get { return width; } }
 
         private readonly int height;
-        public int Height
-        {
-            get { return height; }
-        }
+        public int Height { get { return height; } }
 
         private int[] nextFreeTile;
 
@@ -26,10 +24,7 @@ namespace Connect4
         private ulong[][][] zobristTable;
 
         private ulong hash = 0;
-        public ulong Hash
-        {
-            get { return hash; }
-        }
+        public ulong Hash { get { return hash; } }
 
         // Each ulong represents a player's pieces on the board. The first width
         // bits represent the bottom row, if the bit is 0, then the player does
@@ -63,6 +58,22 @@ namespace Connect4
 
             SetStreakMasks();
             InitialiseZobristTable();
+        }
+
+        // Only to be used by the board at the start of a move.
+        public Grid Clone()
+        {
+            Debug.Assert(typeof(Grid).IsSerializable);
+
+            IFormatter formatter = new BinaryFormatter();
+            Stream stream = new MemoryStream();
+            using (stream)
+            {
+                formatter.Serialize(stream, this);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                return (Grid)formatter.Deserialize(stream);
+            }
         }
 
         private void InitialiseZobristTable()

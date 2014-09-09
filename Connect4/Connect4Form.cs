@@ -13,6 +13,9 @@ namespace Connect4
         private int boardStartX;
         private int boardStartY;
 
+        private const int width = 7;
+        private const int height = 6;
+
         private Image disc;
 
         public Connect4Form()
@@ -21,7 +24,7 @@ namespace Connect4
 
             LoadImages();
 
-            board = new Board(7, 6, this);
+            board = new Board(width, height, this);
             board.OnStart();
         }
 
@@ -43,8 +46,7 @@ namespace Connect4
             int mouseY = plBoard.Height - e.Y;
             int mouseX = e.X;
 
-            if (boardStartY <= mouseY
-                && mouseY <= boardStartY + board.GridCopy.GetLength(0)* disc.Height
+            if (boardStartY <= mouseY && mouseY <= boardStartY + height * disc.Height
                 && mouseX >= boardStartX && !board.IsGameOver)
             {
                 board.HighlightedColumn = (e.X - boardStartX) / disc.Width;
@@ -67,9 +69,6 @@ namespace Connect4
         {
             Graphics graphics = plBoard.CreateGraphics();
 
-            int height = board.GridCopy.GetLength(0);
-            int width = board.GridCopy.GetLength(1);
-
             // TODO: Lock the grid?
             boardStartX = (plBoard.Width - width * disc.Width) / 2;
             boardStartY = (plBoard.Height - height * disc.Height) / 2;
@@ -82,9 +81,9 @@ namespace Connect4
                     Color[] fadedPlayerColors = { Color.FromArgb(150, 150, 0),
                                                     Color.FromArgb(150, 0, 0) };
 
-                    Color color = playerColors[(int)board.GridCopy[y, x]];
+                    Color color = playerColors[(int)board[y, x]];
 
-                    if (board.GridCopy[y, x] == TileState.Empty && x == board.HighlightedColumn)
+                    if (board[y, x] == TileState.Empty && x == board.HighlightedColumn)
                     {
                         if (board.IsValidMove(x, y))
                         {
