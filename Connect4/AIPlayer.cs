@@ -34,7 +34,7 @@ namespace Connect4
 
         // Statistics for log.
         private bool printToConsole = true;
-        private int totalNodesSearched;
+        private long totalNodesSearched;
         private int endNodesSearched;
         private int shallowTableLookups;
         private int tableLookups;
@@ -291,7 +291,7 @@ namespace Connect4
                 // Use the killer moves next.
                 else if (i < 0)
                 {
-                    move = killerMoves[i + orderedMoves - 1];
+                    move = killerMoves[i + killerMovesEntrySize];
                 }
 
                 // Otherwise, use the static move ordering.
@@ -454,6 +454,8 @@ namespace Connect4
             log.WriteLine();
             log.WriteLine("Transposition table:");
             log.WriteLine("\tSize:                     {0:N0}", TranspositionTable.TableSize);
+            log.WriteLine("\tMemory Space:             {0:N0} MB",
+                TranspositionTable.MemorySpaceBytes / 1024 / 1024);
             log.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
             log.WriteLine("\tLookups:                  {0:N0}", tableLookups);
             log.WriteLine("\tRequests:                 {0:N0}",

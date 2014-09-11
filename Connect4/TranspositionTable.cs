@@ -8,37 +8,31 @@ namespace Connect4
 {
     class TranspositionTable
     {
-        public const int TableSize = 1 << (hashIndexBits + 1);
-
         // The number of most significant bits of a state's hash to use as
-        // the index into the table. Do not mess around with this constant.
-        private const int hashIndexBits = 22;
+        // the index into the table. Determines the size of the table.
+        // 26 gives a 1 GB table. Must at least as big as indexBits.
+        private const int hashIndexBits = 25;
+
+        // The number of bits of a state's hash to store in the index.
+        // Do not change this number.
+        private const int indexBits = 19;
+
+        public const int TableSize = 1 << (hashIndexBits + 1);
+        public const int MemorySpaceBytes = sizeof(ulong) * TableSize;
 
         private ulong[] table = new ulong[TableSize];
 
         private int size = 0;
-        public int Size
-        {
-            get { return size; }
-        }
+        public int Size { get { return size; } }
 
         private int insertions = 0;
-        public int Insertions
-        {
-            get { return insertions; }
-        }
+        public int Insertions { get { return insertions; } }
 
         private int requests = 0;
-        public int Requests
-        {
-            get { return requests; }
-        }
+        public int Requests { get { return requests; } }
 
         private int collisions = 0;
-        public int Collisions
-        {
-            get { return collisions; }
-        }
+        public int Collisions { get { return collisions; } }
 
         public void Add(int depth, int bestMove, ulong hash, int score,
             int nodeType)
@@ -87,16 +81,16 @@ namespace Connect4
             requests++;
 
             int index = (int)((state.Hash >> (64 - hashIndexBits)) << 1);
-            ulong maskedHash = state.Hash & (((ulong)1 << 45) - 1);
+            ulong maskedHash = state.Hash & (((ulong)1 << (64 - indexBits)) - 1);
 
             result = table[index];
-            if (result != 0 && (result >> 19) == maskedHash)
+            if (result != 0 && (result >> indexBits) == maskedHash)
             {
                 return true;
             }
 
             result = table[index + 1];
-            return result != 0 && (result >> 19) == maskedHash;
+            return result != 0 && (result >> indexBits) == maskedHash;
         }
 
         public void ResetStatistics()
@@ -121,8 +115,8 @@ namespace Connect4
             result |= (ulong)nodeType << 6;
             result |= (ulong)(score + 128) << 8;
             result |= (ulong)bestMove << 16;
-            result |= hash << 19; // This erases the 19 most significant bits, but
-                                  // they can be retrived from the index instead.
+            result |= hash << indexBits; // This erases the 19 most significant bits, but
+                                         // they can be retrived from the index instead.
 
             return result;
         }
