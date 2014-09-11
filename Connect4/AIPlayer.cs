@@ -326,52 +326,48 @@ namespace Connect4
                 {
                     score = childScore;
                     bestMove = move;
+                }
 
-                    // If this is an alpha or beta cutoff.
-                    if (alpha >= beta)
-                    {
-                        alphaBetaCutoffs++;
+                // If this is an alpha or beta cutoff.
+                if (alpha >= beta)
+                {
+                    alphaBetaCutoffs++;
 
-                        int flag;
+                    // Remember this move as a killer move at the current depth.
+                    // TODO: Add killer moves as a parameter?
+                    killerMoves[1] = killerMoves[0];
+                    killerMoves[0] = bestMove;
 
-                        // beta cutoff.
-                        // TODO: This condition is never true.
-                        if (score <= alphaOrig)
-                        {
-                            betaCutoffs++;
-                            flag = NodeTypeUpper;
-                        }
-
-                        // alpha cutoff.
-                        else
-                        {
-                            alphaCutoffs++;
-                            flag = NodeTypeLower;
-                        }
-
-                        // Store the current score as a lower bound on the exact score.
-                        transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
-
-                        // Remember this move as a killer move at the current depth.
-                        // TODO: Add killer moves as a parameter?
-                        killerMoves[1] = killerMoves[0];
-                        killerMoves[0] = bestMove;
-
-                        if (setBestMove)
-                        {
-                            outBestMove = bestMove;
-                        }
-
-                        return score;
-                    }
+                    break;
                 }
             }
 
             Debug.Assert(bestMove != -1);
 
-            // Store the score in the t-table as an exact score in case the same state is
-            // reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, NodeTypeExact);
+            int flag;
+
+            // beta cutoff.
+            if (score <= alphaOrig)
+            {
+                betaCutoffs++;
+                flag = NodeTypeUpper;
+            }
+
+            // alpha cutoff.
+            else if (score >= beta)
+            {
+                alphaCutoffs++;
+                flag = NodeTypeLower;
+            }
+
+            // No cutoff.
+            else
+            {
+                flag = NodeTypeExact;
+            }
+
+            // Store the score in the t-table in case the same state is reached later.
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
 
             if (setBestMove)
             {

@@ -159,8 +159,6 @@ namespace Connect4
             // Update the 3 piece streak count.
             LazyUpdatePlayerStreaks(player, column, false);
 
-            lastMove = -1;
-
             int row = --nextFreeTile[column];
             Debug.Assert(0 <= row && row < height);
             Debug.Assert(GetTileState(row, column) != TileState.Empty);
