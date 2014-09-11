@@ -25,11 +25,12 @@ namespace Connect4
         {
             this.printToConsole = printToConsole;
 
-            // Set the name of this logfile.
             DateTime now = DateTime.Now;
-            String timestamp = String.Format("{0}-{1}-{2} {3}-{4}-{5}", now.Year,
-                now.Month, now.Day, now.Hour, now.Minute, now.Second);
-            logName = "Log " + timestamp + " la=" + moveLookAhead + ".txt";
+
+            // Set the name of this logfile.
+            string timestampFormat = "yyyy-M-d H-m-s";
+            logName = "Log " + now.ToString(timestampFormat) + " la="
+                + moveLookAhead + ".txt";
             logPathAndName = allFolder + logName;
 
             // Create the log folders if they do not exist already.
@@ -41,6 +42,11 @@ namespace Connect4
                 Console.SetWindowSize(84, 60);
             }
 
+            string fileDateTimeFormatA = "h:mm tt, d";
+            string fileDateTimeFormatB = "MMMM yyyy";
+            WriteLine("Connect 4 AI Log - Created at {0} of {1}.",
+                now.ToString(fileDateTimeFormatA), now.ToString(fileDateTimeFormatB));
+                
 #if DEBUG
             WriteLine("Debug build.");
 #else
