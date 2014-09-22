@@ -12,9 +12,8 @@ namespace Connect4
         // the second of 4 pieces.
         private ulong[][] streakMasks;
 
-        // Two arrays of masks used by the lazy evaluation and game over functions as above,
-        // but each array points to a table of masks at each position of the board.
-        private ulong[][][][] lazyMasks;
+        // A three dimensional table of arrays of masks, accessed by row, column then count.
+        private ulong[][] lazyMasks;
 
         private int lastMove = -1;
 
@@ -78,7 +77,8 @@ namespace Connect4
                 return false;
             }
 
-            ulong[] masks = lazyMasks[1][nextFreeTile[lastMove] - 1][lastMove];
+            int row = nextFreeTile[lastMove] - 1;
+            ulong[] masks = lazyMasks[row + (lastMove * height) + (width * height)];
             ulong playerPosition = playerPositions[player];
 
             for (int i = 0; i < masks.Length; i++)
@@ -125,7 +125,8 @@ namespace Connect4
             }
 
             int result = 0;
-            ulong[] masks = lazyMasks[0][nextFreeTile[move] - 1][move];
+            int row = nextFreeTile[move] - 1;
+            ulong[] masks = lazyMasks[row + (move * height) + 0];
             ulong playerPosition = playerPositions[player];
 
             for (int i = 0; i < masks.Length; i++)
@@ -176,18 +177,13 @@ namespace Connect4
             }
 
             // Allocate the lazy masks array.
-            lazyMasks = new ulong[2][][][];
-            for (int i = 0; i < 2; i++)
+            lazyMasks = new ulong[height * width * 2][];
+            for (int i = 0; i < lazyMasks.Length; i++)
             {
-                lazyMasks[i] = new ulong[height][][];
-                for (int y = 0; y < height; y++)
-                {
-                    lazyMasks[i][y] = new ulong[width][];
-                    for (int x = 0; x < width; x++)
-                    {
-                        lazyMasks[i][y][x] = tempLazyMasks[i, y, x].ToArray();
-                    }
-                }
+                int row = i % height;
+                int column = (i / height) % width;
+                int length = i / (height * width);
+                lazyMasks[i] = tempLazyMasks[length, row, column].ToArray();
             }
         }
 

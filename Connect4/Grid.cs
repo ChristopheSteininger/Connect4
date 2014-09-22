@@ -21,7 +21,9 @@ namespace Connect4
         private int[] nextFreeTile;
 
         private int seed;
-        private ulong[][][] zobristTable;
+
+        // This three dimensional table is accessed by height, width then player.
+        private ulong[] zobristTable;
 
         private ulong hash = 0;
         public ulong Hash { get { return hash; } }
@@ -79,23 +81,14 @@ namespace Connect4
         private void InitialiseZobristTable()
         {
             Random random = new Random(seed);
-            zobristTable = new ulong[height][][];
+            zobristTable = new ulong[height * width * 2];
 
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < zobristTable.Length; y++)
             {
-                zobristTable[y] = new ulong[width][];
-                for (int x = 0; x < width; x++)
-                {
-                    zobristTable[y][x] = new ulong[2];
-                    for (int player = 0; player < 2; player++)
-                    {
-                        byte[] randomBytes = new byte[sizeof(ulong)];
-                        random.NextBytes(randomBytes);
+                byte[] randomBytes = new byte[sizeof(ulong)];
+                random.NextBytes(randomBytes);
 
-                        zobristTable[y][x][player] =
-                            BitConverter.ToUInt64(randomBytes, 0);
-                    }
-                }
+                zobristTable[y] = BitConverter.ToUInt64(randomBytes, 0);
             }
         }
 
@@ -140,7 +133,7 @@ namespace Connect4
             Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
             // Update the hash value.
-            hash ^= zobristTable[row][column][player];
+            hash ^= zobristTable[(player * width * height) + (column * height) + row];
 
             // Update the board.
             playerPositions[player] |= (ulong)1 << (column + row * width);
@@ -167,7 +160,7 @@ namespace Connect4
             playerPositions[player] &= ~((ulong)1 << (column + row * width));
 
             // Restore the hash value.
-            hash ^= zobristTable[row][column][player];
+            hash ^= zobristTable[(player * width * height) + (column * height) + row];
         }
 
         public override string ToString()

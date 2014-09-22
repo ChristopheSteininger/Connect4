@@ -14,7 +14,7 @@ namespace Connect4
         public const int NodeTypeUpper = 2;
         public const int NodeTypeLower = 3;
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
-        private readonly int moveLookAhead = 18;
+        private readonly int moveLookAhead = 17;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
