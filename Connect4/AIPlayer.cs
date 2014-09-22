@@ -155,8 +155,6 @@ namespace Connect4
 
             totalNodesSearched++;
 
-            int alphaOrig = alpha;
-
             // Check if the previous player won on the last move.
             if (state.LazyIsGameOver(1 - currentPlayer))
             {
@@ -261,9 +259,10 @@ namespace Connect4
             }
 
             int childScore;
-            int bestScore = int.MinValue;
             int bestMove = -1;
             int dummy = 0;
+
+            int alphaScout = alpha;
             int betaScout = beta;
 
             int[] killerMoves = killerMovesTable[currentDepth];
@@ -279,7 +278,7 @@ namespace Connect4
 
             bool isFirstChild = true;
 
-            int flag = NodeTypeExact;
+            int flag = NodeTypeUpper;
 
             // Find the best move recurrsively. A negative i means
             // use the shallow lookup or killer move.
@@ -317,33 +316,40 @@ namespace Connect4
                 // as invalid for future iterations.
                 checkedMoves |= moveMask;
 
-                // Apply the move and recurse.
-                state.Move(move, currentPlayer);
-                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -betaScout, -alpha, ref dummy, false);
-                state.UndoMove(move, currentPlayer);
-
-                if (alpha < childScore && childScore < beta && !isFirstChild)
+                if (isFirstChild)
                 {
-                    state.Move(move, currentPlayer);
-                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -beta, -alpha, ref dummy, false);
-                    state.UndoMove(move, currentPlayer);
+                    bestMove = move;
                 }
 
+                // Apply the move and recurse with a null window.
+                state.Move(move, currentPlayer);
+                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -betaScout, -alphaScout, ref dummy, false);
+
+                if (alphaScout < childScore && childScore < beta && !isFirstChild)
+                {
+                    // Rerun the search with a wider window.
+                    state.SetLastMove(move);
+                    alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -beta, -childScore, ref dummy, false);
+
+                    bestMove = move;
+                    flag = NodeTypeExact;
+                }
+
+                state.UndoMove(move, currentPlayer);
                 isFirstChild = false;
 
-                alpha = Math.Max(alpha, childScore);
-
-                // If this move is the best so far.
-                if (childScore > bestScore)
+                // Update the null window.
+                if (childScore > alphaScout)
                 {
-                    bestScore = childScore;
+                    alphaScout = childScore;
+                    flag = NodeTypeExact;
                     bestMove = move;
                 }
 
                 // If this a cutoff.
-                if (alpha >= beta)
+                if (alphaScout >= beta)
                 {
                     alphaBetaCutoffs++;
 
@@ -352,25 +358,25 @@ namespace Connect4
                     killerMoves[1] = killerMoves[0];
                     killerMoves[0] = bestMove;
 
-                    flag = (currentPlayer == player) ? NodeTypeUpper : NodeTypeLower;
+                    flag = NodeTypeLower;
 
                     break;
                 }
 
-                betaScout = alpha + 1;
+                betaScout = alphaScout + 1;
             }
 
             Debug.Assert(bestMove != -1);
 
             // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, alpha, flag);
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, alphaScout, flag);
 
             if (setBestMove)
             {
                 outBestMove = bestMove;
             }
 
-            return alpha;
+            return alphaScout;
         }
 
         private void PrintMoveStatistics(double[] runtimes, Grid grid, int move, int score)

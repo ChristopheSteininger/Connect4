@@ -37,6 +37,11 @@ namespace Connect4
             lastMove = -1;
         }
 
+        public void SetLastMove(int lastMove)
+        {
+            this.lastMove = lastMove;
+        }
+
         /// <summary>
         /// Returns a value indicating which player, if any, won the game.
         /// </summary>
