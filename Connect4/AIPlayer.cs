@@ -127,7 +127,7 @@ namespace Connect4
             {
                 DateTime startTime = DateTime.Now;
 
-                score = NegaMax(moveNumber, moveNumber + depth, grid, player, -infinity,
+                score = NegaScout(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity, ref bestMove, true);
                 grid.ClearMoveHistory();
 
@@ -148,7 +148,7 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int NegaMax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
+        private int NegaScout(int currentDepth, int searchDepth, Grid state, int currentPlayer,
             int alpha, int beta, ref int outBestMove, bool setBestMove)
         {
             Debug.Assert(currentDepth <= searchDepth);
@@ -260,9 +260,11 @@ namespace Connect4
                 shallowLookup = entryBestMove;
             }
 
+            int childScore;
+            int bestScore = int.MinValue;
             int bestMove = -1;
             int dummy = 0;
-            int score = int.MinValue;
+            int betaScout = beta;
 
             int[] killerMoves = killerMovesTable[currentDepth];
             int orderedMoves = 1 + killerMovesEntrySize;
@@ -274,6 +276,10 @@ namespace Connect4
             // checkMoves will be equal to this when there are no more valid
             // moves.
             uint allMovesChecked = ((uint)1 << state.Width) - 1;
+
+            bool isFirstChild = true;
+
+            int flag = NodeTypeExact;
 
             // Find the best move recurrsively. A negative i means
             // use the shallow lookup or killer move.
@@ -313,22 +319,30 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-                int childScore = -NegaMax(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -beta, -alpha, ref dummy, false);
+                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -betaScout, -alpha, ref dummy, false);
                 state.UndoMove(move, currentPlayer);
 
-                // TODO: Will childScore always be greater than alpha inside
-                // the if statement.
+                if (alpha < childScore && childScore < beta && !isFirstChild)
+                {
+                    state.Move(move, currentPlayer);
+                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -beta, -alpha, ref dummy, false);
+                    state.UndoMove(move, currentPlayer);
+                }
+
+                isFirstChild = false;
+
                 alpha = Math.Max(alpha, childScore);
 
                 // If this move is the best so far.
-                if (childScore > score)
+                if (childScore > bestScore)
                 {
-                    score = childScore;
+                    bestScore = childScore;
                     bestMove = move;
                 }
 
-                // If this is an alpha or beta cutoff.
+                // If this a cutoff.
                 if (alpha >= beta)
                 {
                     alphaBetaCutoffs++;
@@ -338,43 +352,25 @@ namespace Connect4
                     killerMoves[1] = killerMoves[0];
                     killerMoves[0] = bestMove;
 
+                    flag = (currentPlayer == player) ? NodeTypeUpper : NodeTypeLower;
+
                     break;
                 }
+
+                betaScout = alpha + 1;
             }
 
             Debug.Assert(bestMove != -1);
 
-            int flag;
-
-            // beta cutoff.
-            if (score <= alphaOrig)
-            {
-                betaCutoffs++;
-                flag = NodeTypeUpper;
-            }
-
-            // alpha cutoff.
-            else if (score >= beta)
-            {
-                alphaCutoffs++;
-                flag = NodeTypeLower;
-            }
-
-            // No cutoff.
-            else
-            {
-                flag = NodeTypeExact;
-            }
-
             // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, alpha, flag);
 
             if (setBestMove)
             {
                 outBestMove = bestMove;
             }
 
-            return score;
+            return alpha;
         }
 
         private void PrintMoveStatistics(double[] runtimes, Grid grid, int move, int score)

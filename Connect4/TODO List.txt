@@ -13,6 +13,7 @@
     > http://www.pressibus.org/ataxx/autre/minimax/paper.html is a good starting point.
   - The Move()/UndoMove() methods are the new bottlenecks.
     > Move 'nextFreeTile' array into 'playerPositions'?
+  - Look into Quiescence Search https://chessprogramming.wikispaces.com/Quiescence+Search.
 
 * Testing.
   - Whole system test: create an auto player which systematically plays, at least,
