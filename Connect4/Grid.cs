@@ -124,6 +124,11 @@ namespace Connect4
             return 0 <= column && column < width && nextFreeTile[column] < height;
         }
 
+        public int GetMoveRow(int move)
+        {
+            return nextFreeTile[move];
+        }
+
         public void Move(int column, int player)
         {
             Debug.Assert(0 <= column && column < width);

@@ -18,8 +18,7 @@ namespace Connect4
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
-        private int[][] killerMovesTable;
-        private int[] staticMoveOrdering = new int[] { 1, 5, 4, 3, 2, 0, 6 };
+        private int[][][] historyTable;
 
         // Fields used during search.
         private int moveNumber = 0;
@@ -54,16 +53,6 @@ namespace Connect4
 
         private void CreateAIPlayer(int seed)
         {
-            killerMovesTable = new int[maxMoves - 1][];
-            for (int i = 0; i < killerMovesTable.Length; i++)
-            {
-                killerMovesTable[i] = new int[killerMovesEntrySize];
-                for (int j = 0; j < killerMovesEntrySize; j++)
-                {
-                    killerMovesTable[i][j] = -1;
-                }
-            }
-
             log = new AILog(player, seed, moveLookAhead, printToConsole);
         }
 
@@ -105,6 +94,17 @@ namespace Connect4
 
             int score = -1;
 
+            // Create the history table.
+            historyTable = new int[grid.Height][][];
+            for (int y = 0; y < historyTable.Length; y++)
+            {
+                historyTable[y] = new int[grid.Width][];
+                for (int x = 0; x < historyTable[y].Length; x++)
+                {
+                    historyTable[y][x] = new int[] { 0, 0 };
+                }
+            }
+
             // Only update the streak count for the AI player, no need
             // the evaluate after the opposing player's move.
             grid.UpdateLazyStreakCountForPlayer[player] = true;
@@ -123,9 +123,12 @@ namespace Connect4
 
                 score = NegaScout(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity);
-                grid.ClearMoveHistory();
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
+
+                grid.ClearMoveHistory();
+                ResetHistoryTable();
+
                 totalRuntime += runtimes[depth - 1];
             }
 
@@ -140,6 +143,18 @@ namespace Connect4
         public override void GameOver(bool winner)
         {
             log.EndGame(winner);
+        }
+
+        private void ResetHistoryTable()
+        {
+            for (int y = 0; y < historyTable.Length; y++)
+            {
+                for (int x = 0; x < historyTable[y].Length; x++)
+                {
+                    historyTable[y][x][0] = 0;
+                    historyTable[y][x][1] = 0;
+                }
+            }
         }
 
         private int NegaScout(int currentDepth, int searchDepth, Grid state, int currentPlayer,
@@ -252,74 +267,30 @@ namespace Connect4
                 shallowLookup = entryBestMove;
             }
 
+            //int[] moves = OrderMoves(state, shallowLookup, currentPlayer,
+            //    searchDepth - currentDepth > 4);
+            int[] moves = OrderMoves(state, shallowLookup, currentPlayer,
+                currentDepth - moveNumber < 13);
+
             int childScore;
-            int bestMove = -1;
+            int bestMove = moves[0];
 
             int alphaScout = alpha;
             int betaScout = beta;
 
-            int[] killerMoves = killerMovesTable[currentDepth];
-            int orderedMoves = 1 + killerMovesEntrySize;
-
-            // A bitmap where a 1 means the corresponding move has already been
-            // checked. Initialised with a 1 at all invalid moves.
-            uint checkedMoves = state.GetInvalidMovesMask();
-
-            // checkMoves will be equal to this when there are no more valid
-            // moves.
-            uint allMovesChecked = ((uint)1 << state.Width) - 1;
-
-            bool isFirstChild = true;
-
             int flag = NodeTypeUpper;
 
-            // Find the best move recurrsively. A negative i means
-            // use the shallow lookup or killer move.
-            for (int i = -orderedMoves; i < state.Width
-                && checkedMoves != allMovesChecked; i++)
+            // Find the best move recursively.
+            for (int i = 0; i < moves.Length; i++)
             {
-                int move;
-
-                // Use shallow moves first.
-                if (i == -orderedMoves)
-                {
-                    move = shallowLookup;
-                }
-
-                // Use the killer moves next.
-                else if (i < 0)
-                {
-                    move = killerMoves[i + killerMovesEntrySize];
-                }
-
-                // Otherwise, use the static move ordering.
-                else
-                {
-                    move = staticMoveOrdering[i];
-                }
-
-                // Only proceed if the move is valid and has not been checked yet.
-                uint moveMask = (uint)1 << move;
-                if (move < 0 || (checkedMoves & moveMask) == moveMask)
-                {
-                    continue;
-                }
-
-                // At this point, the move has been found, so mark the move
-                // as invalid for future iterations.
-                checkedMoves |= moveMask;
-
-                if (isFirstChild)
-                {
-                    bestMove = move;
-                }
+                int move = moves[i];
 
                 // Apply the move and recurse with a null window.
                 state.Move(move, currentPlayer);
                 childScore = -NegaScout(currentDepth + 1, searchDepth, state,
                     1 - currentPlayer, -betaScout, -alphaScout);
 
-                if (alphaScout < childScore && childScore < beta && !isFirstChild)
+                if (alphaScout < childScore && childScore < beta && i > 0)
                 {
                     // Rerun the search with a wider window.
                     state.SetLastMove(move);
@@ -328,10 +299,12 @@ namespace Connect4
 
                     bestMove = move;
                     flag = NodeTypeExact;
+
+                    historyTable[state.GetMoveRow(move) - 1][move][currentPlayer]
+                        += 1 << (searchDepth - currentDepth);
                 }
 
                 state.UndoMove(move, currentPlayer);
-                isFirstChild = false;
 
                 // Update the null window.
                 if (childScore > alphaScout)
@@ -339,6 +312,9 @@ namespace Connect4
                     alphaScout = childScore;
                     flag = NodeTypeExact;
                     bestMove = move;
+
+                    historyTable[state.GetMoveRow(move)][move][currentPlayer]
+                        += 1 << (searchDepth - currentDepth);
                 }
 
                 // If this a cutoff.
@@ -346,10 +322,8 @@ namespace Connect4
                 {
                     alphaBetaCutoffs++;
 
-                    // Remember this move as a killer move at the current depth.
-                    // TODO: Add killer moves as a parameter?
-                    killerMoves[1] = killerMoves[0];
-                    killerMoves[0] = bestMove;
+                    historyTable[state.GetMoveRow(move)][move][currentPlayer]
+                        += 1 << (searchDepth - currentDepth);
 
                     flag = NodeTypeLower;
 
@@ -370,6 +344,103 @@ namespace Connect4
             }
 
             return alphaScout;
+        }
+
+        private int[] OrderMoves(Grid state, int shallowLookup, int currentPlayer,
+            bool fullSort)
+        {
+            uint invalidMoves = state.GetInvalidMovesMask();
+
+            // Count the number of bits set in invalidMoves, which gives number
+            // of invalid moves.
+            uint count = invalidMoves - ((invalidMoves >> 1) & 0x55);
+            count = (count & 0x33) + ((count >> 2) & 0x33);
+            count = (count + (count >> 4)) & 0x0F;
+
+            // Store all valid moves in the moves array.
+            int[] moves = new int[state.Width - count];
+            int index = 0;
+            int shallowLookupIndex = -1;
+            for (int i = 0; index < moves.Length; i++)
+            {
+                if ((invalidMoves & 1) == 0)
+                {
+                    moves[index] = i;
+                    if (i == shallowLookup)
+                    {
+                        shallowLookupIndex = index;
+                    }
+                    index++;
+                }
+
+                invalidMoves >>= 1;
+            }
+
+            if (fullSort)
+            {
+                // Store the weight (an estimate of how good the move is) against the move.
+                int[] weights = new int[moves.Length];
+                for (int i = 0; i < weights.Length; i++)
+                {
+                    int move = moves[i];
+                    weights[i] = (move == shallowLookup)
+                        ? int.MaxValue
+                        : historyTable[state.GetMoveRow(move)][move][currentPlayer];
+                }
+
+                // Order the moves according to the corresponding weights.
+                MergeSort(moves, weights, 0, moves.Length);
+            }
+
+            else if (shallowLookupIndex != -1)
+            {
+                moves[shallowLookupIndex] = moves[0];
+                moves[0] = shallowLookup;
+            }
+
+            return moves;
+        }
+
+        private void MergeSort(int[] moves, int[] weights, int start, int end)
+        {
+            // The first index of the second half.
+            int split = (start + end) / 2;
+
+            // Base case.
+            if (split == start)
+            {
+                return;
+            }
+
+            // start is inclusive, end is exclusive.
+            MergeSort(moves, weights, start, split);
+            MergeSort(moves, weights, split, end);
+
+            // Merge the sorted halves.
+            int indexA = start;
+            int indexB = split;
+            int[] tempWeights = new int[end - start];
+            int[] tempMoves = new int[end - start];
+            for (int i = start; i < end; i++)
+            {
+                if (indexB < end && (indexA == split || weights[indexA] < weights[indexB]))
+                {
+                    tempWeights[i - start] = weights[indexB];
+                    tempMoves[i - start] = moves[indexB++];
+                }
+
+                else
+                {
+                    tempWeights[i - start] = weights[indexA];
+                    tempMoves[i - start] = moves[indexA++];
+                }
+            }
+
+            for (int i = 0; i < tempWeights.Length; i++)
+            {
+                weights[i + start] = tempWeights[i];
+                moves[i + start] = tempMoves[i];
+            }
         }
 
         private void PrintMoveStatistics(double[] runtimes, Grid grid, int move, int score)
