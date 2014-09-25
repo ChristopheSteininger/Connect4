@@ -25,6 +25,9 @@ namespace Connect4
         // This three dimensional table is accessed by height, width then player.
         private ulong[] zobristTable;
 
+        // A table of all valid moves index by the last row of the board.
+        private int[][] movesTable;
+
         private ulong hash = 0;
         public ulong Hash { get { return hash; } }
 
@@ -60,6 +63,7 @@ namespace Connect4
 
             SetStreakMasks();
             InitialiseZobristTable();
+            InitialiseMovesTable();
         }
 
         // Only to be used by the board at the start of a move.
@@ -92,6 +96,34 @@ namespace Connect4
             }
         }
 
+        private void InitialiseMovesTable()
+        {
+            movesTable = new int[1 << width][];
+            for (int i = 0; i < movesTable.Length; i++)
+            {
+                uint invalidMoves = (uint)i;
+
+                // Count the number of bits not set in invalidMoves, which gives number
+                // of invalid moves.
+                uint count = invalidMoves - ((invalidMoves >> 1) & 0x55);
+                count = (count & 0x33) + ((count >> 2) & 0x33);
+                count = (count + (count >> 4)) & 0x0F;
+                count = (uint)width - count;
+
+                movesTable[i] = new int[count];
+                int index = 0;
+                for (int j = 0; index < count; j++)
+                {
+                    if ((invalidMoves & 1) == 0)
+                    {
+                        movesTable[i][index++] = j;
+                    }
+
+                    invalidMoves >>= 1;
+                }
+            }
+        }
+
         private TileState GetTileState(int row, int column)
         {
             ulong mask = (ulong)1 << (column + row * width);
@@ -114,9 +146,10 @@ namespace Connect4
                 && nextFreeTile[column] == row;
         }
 
-        public uint GetInvalidMovesMask()
+        public int[] GetValidMoves()
         {
-            return (uint)((playerPositions[0] | playerPositions[1]) >> (width * (height - 1)));
+            return movesTable[(playerPositions[0] | playerPositions[1])
+                >> (width * (height - 1))];
         }
 
         public bool IsValidMove(int column)

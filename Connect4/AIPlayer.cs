@@ -120,21 +120,19 @@ namespace Connect4
             for (int depth = 1; depth <= iterations; depth++)
             {
                 DateTime startTime = DateTime.Now;
-
                 score = NegaScout(moveNumber, moveNumber + depth, grid, player, -infinity,
                     infinity);
-
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
 
                 grid.ClearMoveHistory();
-                ResetHistoryTable();
 
                 totalRuntime += runtimes[depth - 1];
             }
 
-            PrintMoveStatistics(runtimes, grid, finalMove, score);
-
             moveNumber += 2;
+            ResetHistoryTable();
+
+            PrintMoveStatistics(runtimes, grid, finalMove, score);
 
             // Store the result so the main thread can make the move.
             e.Result = finalMove;
@@ -349,31 +347,17 @@ namespace Connect4
         private int[] OrderMoves(Grid state, int shallowLookup, int currentPlayer,
             bool fullSort)
         {
-            uint invalidMoves = state.GetInvalidMovesMask();
-
-            // Count the number of bits set in invalidMoves, which gives number
-            // of invalid moves.
-            uint count = invalidMoves - ((invalidMoves >> 1) & 0x55);
-            count = (count & 0x33) + ((count >> 2) & 0x33);
-            count = (count + (count >> 4)) & 0x0F;
-
-            // Store all valid moves in the moves array.
-            int[] moves = new int[state.Width - count];
-            int index = 0;
-            int shallowLookupIndex = -1;
-            for (int i = 0; index < moves.Length; i++)
+            // Move the shallow lookup to the front.
+            int[] movesSource = state.GetValidMoves();
+            int[] moves = new int[movesSource.Length];
+            for (int i = 0; i < movesSource.Length; i++)
             {
-                if ((invalidMoves & 1) == 0)
+                moves[i] = movesSource[i];
+                if (moves[i] == shallowLookup)
                 {
-                    moves[index] = i;
-                    if (i == shallowLookup)
-                    {
-                        shallowLookupIndex = index;
-                    }
-                    index++;
+                    moves[i] = moves[0];
+                    moves[0] = shallowLookup;
                 }
-
-                invalidMoves >>= 1;
             }
 
             if (fullSort)
@@ -390,12 +374,6 @@ namespace Connect4
 
                 // Order the moves according to the corresponding weights.
                 MergeSort(moves, weights, 0, moves.Length);
-            }
-
-            else if (shallowLookupIndex != -1)
-            {
-                moves[shallowLookupIndex] = moves[0];
-                moves[0] = shallowLookup;
             }
 
             return moves;
