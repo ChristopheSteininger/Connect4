@@ -27,6 +27,8 @@ namespace Connect4
 
         private ulong hash = 0;
         public ulong Hash { get { return hash; } }
+        private ulong flippedHash = 0;
+        public ulong FlippedHash { get { return flippedHash; } }
 
         // Each ulong represents a player's pieces on the board. The first width
         // bits represent the bottom row, if the bit is 0, then the player does
@@ -132,8 +134,10 @@ namespace Connect4
             Debug.Assert(row < height);
             Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
-            // Update the hash value.
+            // Update the hash values.
             hash ^= zobristTable[(player * width * height) + (column * height) + row];
+            flippedHash ^= zobristTable[
+                (player * width * height) + ((width - column - 1) * height) + row];
 
             // Update the board.
             playerPositions[player] |= (ulong)1 << (column + row * width);
@@ -159,8 +163,10 @@ namespace Connect4
             // Restore the board.
             playerPositions[player] &= ~((ulong)1 << (column + row * width));
 
-            // Restore the hash value.
+            // Restore the hash values.
             hash ^= zobristTable[(player * width * height) + (column * height) + row];
+            flippedHash ^= zobristTable[
+                (player * width * height) + ((width - column - 1) * height) + row];
         }
 
         public override string ToString()

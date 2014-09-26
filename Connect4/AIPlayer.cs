@@ -14,7 +14,7 @@ namespace Connect4
         public const int NodeTypeUpper = 2;
         public const int NodeTypeLower = 3;
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
-        private readonly int moveLookAhead = 17;
+        private readonly int moveLookAhead = 18;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
@@ -181,13 +181,18 @@ namespace Connect4
 
             // Check if this state has already been visited.
             ulong entry;
-            if (transpositionTable.TryGet(state, out entry))
+            LookupType lookupResult = transpositionTable.Lookup(state, out entry);
+            if (lookupResult != LookupType.Failed)
             {
                 // The depth is stored in bits 0 to 5 of the entry.
                 int entryDepth = (int)(entry & ((1 << 6) - 1));
 
                 // The best move is stored in bits 16 to 18 of the entry.
                 int entryBestMove = (int)((entry >> 16) & ((1 << 3) - 1));
+                if (lookupResult == LookupType.Flipped)
+                {
+                    entryBestMove = state.Width - entryBestMove - 1;
+                }
 
                 // If the state has been visited and searched at least as deep
                 // as needed, then return immediately or improve the alpha and
