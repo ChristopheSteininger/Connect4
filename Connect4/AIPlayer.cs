@@ -119,6 +119,11 @@ namespace Connect4
             // Get the best move and measure the runtime.
             for (int depth = 1; depth <= iterations; depth++)
             {
+                // Print the start time of this iteration.
+                string updateText = String.Format(
+                    "(Current iteration is {0}, began on {1})", depth, DateTime.Now.TimeOfDay);
+                Console.Write(updateText);
+
                 DateTime startTime = DateTime.Now;
 
                 score = NegaScout(moveNumber, moveNumber + depth, grid, player, -infinity,
@@ -127,6 +132,11 @@ namespace Connect4
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
                 totalRuntime += runtimes[depth - 1];
+
+                // Clear the itertion start time text.
+                Console.SetCursorPosition(Console.CursorLeft - updateText.Length, Console.CursorTop);
+                Console.Write(new String(' ', updateText.Length));
+                Console.SetCursorPosition(Console.CursorLeft - updateText.Length, Console.CursorTop);
             }
 
             PrintMoveStatistics(runtimes, grid, finalMove, score);
@@ -309,7 +319,7 @@ namespace Connect4
                     bestMove = move;
                 }
 
-                // Apply the move and recurse with a null window.
+                // Apply the move and recurse.
                 state.Move(move, currentPlayer);
                 childScore = -NegaScout(currentDepth + 1, searchDepth, state,
                     1 - currentPlayer, -betaScout, -alphaScout);
@@ -328,7 +338,6 @@ namespace Connect4
                 state.UndoMove(move, currentPlayer);
                 isFirstChild = false;
 
-                // Update the null window.
                 if (childScore > alphaScout)
                 {
                     alphaScout = childScore;
@@ -336,7 +345,8 @@ namespace Connect4
                     bestMove = move;
                 }
 
-                // If this a cutoff.
+                // If this a beta cutoff then the score is a lower bound on the
+                // true score. AKA a fail-high.
                 if (alphaScout >= beta)
                 {
                     alphaBetaCutoffs++;
@@ -351,6 +361,7 @@ namespace Connect4
                     break;
                 }
 
+                // Update the null window.
                 betaScout = alphaScout + 1;
             }
 
