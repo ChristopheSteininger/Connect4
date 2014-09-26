@@ -93,7 +93,6 @@ namespace Connect4
 
             drawer.DrawBoard();
 
-            // NOTE: This unnecessarily clones the grid for the human player.
             players[currentPlayer].BeginMove(grid.Clone());
         }
     }

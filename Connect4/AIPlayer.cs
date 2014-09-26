@@ -34,7 +34,6 @@ namespace Connect4
         private int shallowTableLookups;
         private int tableLookups;
         private int alphaBetaCutoffs;
-        private int alphaCutoffs;
         private int betaCutoffs;
         private double totalRuntime = 0;
 
@@ -100,7 +99,6 @@ namespace Connect4
             shallowTableLookups = 0;
             tableLookups = 0;
             alphaBetaCutoffs = 0;
-            alphaCutoffs = 0;
             betaCutoffs = 0;
 
             int score = -1;
@@ -276,9 +274,13 @@ namespace Connect4
 
             bool isFirstChild = true;
 
+            // Assume that this is an all-node and therefore the score is an
+            // upper bound on the true score until proven otherwise.
             int flag = NodeTypeUpper;
 
-            // Find the best move recurrsively. A negative i means
+            int movesSearched = 0;
+
+            // Find the best move recursively. A negative i means
             // use the shallow lookup or killer move.
             for (int i = -orderedMoves; i < state.Width
                 && checkedMoves != allMovesChecked; i++)
@@ -321,23 +323,46 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -betaScout, -alphaScout);
 
-                if (alphaScout < childScore && childScore < beta && !isFirstChild)
+                // If this is likely to be an all-node, reduce the depth of future
+                // searches.
+                if (movesSearched >= orderedMoves   &&
+                    searchDepth - currentDepth >= 3 &&
+                    flag != NodeTypeExact)
                 {
-                    // Rerun the search with a wider window.
-                    state.SetLastMove(move);
-                    alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -beta, -childScore);
+                    childScore = -NegaScout(currentDepth + 1, searchDepth - 1, state,
+                        1 - currentPlayer, -betaScout, -alphaScout);
+                }
 
-                    bestMove = move;
-                    flag = NodeTypeExact;
+                // Otherwise, force the next condition to hold.
+                else
+                {
+                    childScore = alphaScout + 1;
+                }
+
+                // Test if an LMR child returned a suprising result, or if this is
+                // a normal search.
+                if (childScore > alphaScout)
+                {
+                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -betaScout, -alphaScout);
+
+                    // Rerun the search with a wider window if the returned score
+                    // is inside the bounds and this is a PV-node.
+                    if (alphaScout < childScore && childScore < beta && !isFirstChild)
+                    {
+                        state.SetLastMove(move);
+                        alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
+                            1 - currentPlayer, -beta, -childScore);
+
+                        bestMove = move;
+                        flag = NodeTypeExact;
+                    }
                 }
 
                 state.UndoMove(move, currentPlayer);
-                isFirstChild = false;
 
+                // Check if this is a PV-node and the lower bound can be improved.
                 if (childScore > alphaScout)
                 {
                     alphaScout = childScore;
@@ -345,17 +370,16 @@ namespace Connect4
                     bestMove = move;
                 }
 
-                // If this a beta cutoff then the score is a lower bound on the
-                // true score. AKA a fail-high.
+                // Check if this a beta cutoff. AKA a fail-high.
                 if (alphaScout >= beta)
                 {
-                    alphaBetaCutoffs++;
+                    betaCutoffs++;
 
                     // Remember this move as a killer move at the current depth.
-                    // TODO: Add killer moves as a parameter?
                     killerMoves[1] = killerMoves[0];
                     killerMoves[0] = bestMove;
 
+                    // This is a cut-node, so the score is a lower bound.
                     flag = NodeTypeLower;
 
                     break;
@@ -363,6 +387,9 @@ namespace Connect4
 
                 // Update the null window.
                 betaScout = alphaScout + 1;
+
+                isFirstChild = false;
+                movesSearched++;
             }
 
             Debug.Assert(bestMove != -1);
@@ -402,9 +429,8 @@ namespace Connect4
             log.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
                 nodesPerMillisecond);
             log.WriteLine("Total runtime {0:N} ms.", totalRuntime);
-            log.WriteLine("{0:N0} alpha and beta cutoffs.", alphaBetaCutoffs);
-            log.WriteLine("\t(including {0:N0} alpha and {1:N0} beta cutoffs)",
-                alphaCutoffs, betaCutoffs);
+            log.WriteLine("{0:N0} cutoffs from lookups and {1:N0} beta cutoffs.",
+                alphaBetaCutoffs, betaCutoffs);
 
             log.WriteLine("Move is {0:N0}.", move);
             if (score == infinity)

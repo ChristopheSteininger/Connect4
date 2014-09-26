@@ -154,22 +154,22 @@ namespace Connect4
 
         public static int GetDepth(ulong data)
         {
-            return (int)(data & ((1 << 6) - 1));
+            return (int)(data & 0x3F);
         }
 
         public static int GetNodeType(ulong data)
         {
-            return (int)((data >> 6) & ((1 << 2) - 1));
+            return (int)((data >> 6) & 0x3);
         }
 
         public static int GetScore(ulong data)
         {
-            return (int)((data >> 8) & ((1 << 8) - 1)) - 128;
+            return (int)((data >> 8) & 0xFF) - 128;
         }
 
         public static int GetBestMove(ulong data)
         {
-            return (int)((data >> 16) & ((1 << 3) - 1));
+            return (int)((data >> 16) & 0x7);
         }
 
         public static ulong GetHash(ulong data)
