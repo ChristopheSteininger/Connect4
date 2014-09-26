@@ -374,13 +374,43 @@ namespace Connect4
 
                 // Order the moves according to the corresponding weights.
                 MergeSort(moves, weights, 0, moves.Length);
+                //SelectionSort(moves, weights, 5);
             }
 
             return moves;
         }
 
+        private void SelectionSort(int[] moves, int[] weights, int n)
+        {
+            Debug.Assert(moves.Length == weights.Length);
+
+            for (int i = 0; i < n && i < weights.Length; i++)
+            {
+                int maxWeight = weights[i];
+                int maxIndex = i;
+                for (int j = i + 1; j < weights.Length; j++)
+                {
+                    if (weights[j] > maxWeight)
+                    {
+                        maxWeight = weights[j];
+                        maxIndex = j;
+                    }
+                }
+
+                int tempMove = moves[maxIndex];
+                moves[maxIndex] = moves[i];
+                moves[i] = tempMove;
+
+                weights[maxIndex] = weights[i];
+                weights[i] = maxWeight;
+            }
+        }
+
         private void MergeSort(int[] moves, int[] weights, int start, int end)
         {
+            Debug.Assert(moves.Length == weights.Length);
+            Debug.Assert(start < end);
+
             // The first index of the second half.
             int split = (start + end) / 2;
 
