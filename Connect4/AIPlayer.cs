@@ -10,11 +10,16 @@ namespace Connect4
         // Search constants.
         private const int infinity = 127;
         private const int killerMovesEntrySize = 2;
-        public const int NodeTypeExact = 1;
-        public const int NodeTypeUpper = 2;
-        public const int NodeTypeLower = 3;
+        private const int NodeTypeExact = 1;
+        private const int NodeTypeUpper = 2;
+        private const int NodeTypeLower = 3;
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
+
+        // Search options.
         private readonly int moveLookAhead = 18;
+        private const bool useLMR = true;
+        private const int lmrDepthChange = 1;
+        private const int lmrMinDepth = 3;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
@@ -124,8 +129,8 @@ namespace Connect4
 
                 DateTime startTime = DateTime.Now;
 
-                score = NegaScout(moveNumber, moveNumber + depth, grid, player, -infinity,
-                    infinity);
+                score = NegaScout(moveNumber, moveNumber + depth, grid, player,
+                    -infinity, infinity, true);
                 grid.ClearMoveHistory();
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
@@ -151,7 +156,7 @@ namespace Connect4
         }
 
         private int NegaScout(int currentDepth, int searchDepth, Grid state, int currentPlayer,
-            int alpha, int beta)
+            int alpha, int beta, bool isParentPVNode)
         {
             Debug.Assert(currentDepth <= searchDepth);
 
@@ -326,12 +331,14 @@ namespace Connect4
 
                 // If this is likely to be an all-node, reduce the depth of future
                 // searches.
-                if (movesSearched >= orderedMoves   &&
-                    searchDepth - currentDepth >= 3 &&
-                    flag != NodeTypeExact)
+                if (useLMR
+                    && movesSearched >= orderedMoves
+                    && searchDepth - currentDepth >= lmrMinDepth
+                    && !isParentPVNode
+                    && flag != NodeTypeExact)
                 {
-                    childScore = -NegaScout(currentDepth + 1, searchDepth - 1, state,
-                        1 - currentPlayer, -betaScout, -alphaScout);
+                    childScore = -NegaScout(currentDepth + 1, searchDepth - lmrDepthChange,
+                        state, 1 - currentPlayer, -betaScout, -alphaScout, false);
                 }
 
                 // Otherwise, force the next condition to hold.
@@ -345,7 +352,7 @@ namespace Connect4
                 if (childScore > alphaScout)
                 {
                     childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -betaScout, -alphaScout);
+                        1 - currentPlayer, -betaScout, -alphaScout, flag == NodeTypeExact);
 
                     // Rerun the search with a wider window if the returned score
                     // is inside the bounds and this is a PV-node.
@@ -353,7 +360,7 @@ namespace Connect4
                     {
                         state.SetLastMove(move);
                         alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
-                            1 - currentPlayer, -beta, -childScore);
+                            1 - currentPlayer, -beta, -childScore, flag == NodeTypeExact);
 
                         bestMove = move;
                         flag = NodeTypeExact;
