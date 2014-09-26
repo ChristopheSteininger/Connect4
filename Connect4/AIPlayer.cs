@@ -176,23 +176,15 @@ namespace Connect4
                 return state.StreakCount[player];
             }
 
-            // Will be set to the best move of a shallow lookup.
-            int shallowLookup = -1;
+            // Will be set to the best move of the lookup.
+            int entryBestMove;
 
             // Check if this state has already been visited.
             ulong entry;
-            LookupType lookupResult = transpositionTable.Lookup(state, out entry);
-            if (lookupResult != LookupType.Failed)
+            if (transpositionTable.Lookup(state, out entry, out entryBestMove))
             {
                 // The depth is stored in bits 0 to 5 of the entry.
-                int entryDepth = (int)(entry & ((1 << 6) - 1));
-
-                // The best move is stored in bits 16 to 18 of the entry.
-                int entryBestMove = (int)((entry >> 16) & ((1 << 3) - 1));
-                if (lookupResult == LookupType.Flipped)
-                {
-                    entryBestMove = state.Width - entryBestMove - 1;
-                }
+                int entryDepth = (int)(entry & 0x3F);
 
                 // If the state has been visited and searched at least as deep
                 // as needed, then return immediately or improve the alpha and
@@ -202,10 +194,10 @@ namespace Connect4
                     tableLookups++;
 
                     // The score is stored in bits 8 to 15 of the entry.
-                    int entryScore = (int)((entry >> 8) & ((1 << 8) - 1)) - 128;
+                    int entryScore = (int)((entry >> 8) & 0xFF) - 128;
 
                     // The type is stored in bits 6 to 7 of the entry.
-                    int entryType = (int)((entry >> 6) & ((1 << 2) - 1));
+                    int entryType = (int)((entry >> 6) & 0x3);
 
                     switch (entryType)
                     {
@@ -253,8 +245,6 @@ namespace Connect4
                 {
                     shallowTableLookups++;
                 }
-
-                shallowLookup = entryBestMove;
             }
 
             int childScore;
@@ -288,7 +278,7 @@ namespace Connect4
                 // Use shallow moves first.
                 if (i == -orderedMoves)
                 {
-                    move = shallowLookup;
+                    move = entryBestMove;
                 }
 
                 // Use the killer moves next.
@@ -434,7 +424,7 @@ namespace Connect4
                 log.Write(" +{0,-2}: {1,8:N2} ms", i + 1, runtimes[i]);
 
                 // Print the percentage of time spent in this iteration.
-                log.Write(", {0,5:N2}%", runtimes[i] * 100 / totalRuntime);
+                log.Write(", {0,5:N2}%", runtimes[i] * 100 / runtime);
 
                 // Print how much longer this iteration took than the last.
                 if (i > 0)

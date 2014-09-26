@@ -25,8 +25,11 @@ namespace Connect4
         // This three dimensional table is accessed by height, width then player.
         private ulong[] zobristTable;
 
+        // The hash of the current position.
         private ulong hash = 0;
         public ulong Hash { get { return hash; } }
+
+        // The hash of the mirror image of the current position.
         private ulong flippedHash = 0;
         public ulong FlippedHash { get { return flippedHash; } }
 

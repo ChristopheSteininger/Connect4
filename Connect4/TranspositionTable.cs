@@ -6,8 +6,6 @@ using System.Diagnostics;
 
 namespace Connect4
 {
-    enum LookupType { Failed, Normal, Flipped }
-
     class TranspositionTable
     {
         // The number of most significant bits of a state's hash to use as
@@ -78,19 +76,35 @@ namespace Connect4
             }
         }
 
-        public LookupType Lookup(Grid state, out ulong result)
+        public bool Lookup(Grid state, out ulong result, out int bestMove)
         {
+            // Test if the table contains the position.
             if (TryGet(state.Hash, out result))
             {
-                return LookupType.Normal;
+                // Test if the table also contains the flipped position and use
+                // this position instead if it is deeper.
+                ulong flippedResult;
+                if (TryGet(state.FlippedHash, out flippedResult))
+                {
+                    if ((flippedResult & 0x3F) > (result & 0x3F))
+                    {
+                        result = flippedResult;
+                    }
+                }
+
+                bestMove = (int)((result >> 16) & 0x7);
+                return true;
             }
 
+            // Otherwise test if the table contains the flipped position.
             if (TryGet(state.FlippedHash, out result))
             {
-                return LookupType.Flipped;
+                bestMove = state.Width - (int)((result >> 16) & 0x7) - 1;
+                return true;
             }
 
-            return LookupType.Failed;
+            bestMove = -1;
+            return false;
         }
 
         private bool TryGet(ulong hash, out ulong result)
