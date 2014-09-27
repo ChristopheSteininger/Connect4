@@ -265,6 +265,29 @@ namespace Connect4
 
             int childScore;
 
+            // Check for forced moves.
+            for (int move = 0; move < state.Width; move++)
+            {
+                // If the opponent can win with this move, then the current player
+                // must play the move instead.
+                if (state.LazyIsGameOverAndIsValidMove(1 - currentPlayer, move))
+                {
+                    state.Move(move, currentPlayer);
+                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -beta, -alpha);
+                    state.UndoMove(move, currentPlayer);
+
+                    if (currentDepth == moveNumber)
+                    {
+                        finalMove = move;
+                    }
+
+                    // TODO: Store in transposition table?
+
+                    return childScore;
+                }
+            }
+
             // See if the player can maintain an advantage even after forfeiting
             // this move.
             if (useNullMovePruning

@@ -92,6 +92,27 @@ namespace Connect4
             return false;
         }
 
+        public bool LazyIsGameOverAndIsValidMove(int player, int move)
+        {
+            if (nextFreeTile[move] < height)
+            {
+                int row = nextFreeTile[move];
+                ulong[] masks = lazyMasks[row + (move * height) + (width * height)];
+                ulong playerPosition = playerPositions[player]
+                    | (ulong)1 << (move + row * width);
+
+                for (int i = 0; i < masks.Length; i++)
+                {
+                    if ((playerPosition & masks[i]) == masks[i])
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Returns the number of 3 piece streaks which the player has.
         /// </summary>

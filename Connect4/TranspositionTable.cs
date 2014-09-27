@@ -84,12 +84,10 @@ namespace Connect4
                 // Test if the table also contains the flipped position and use
                 // this position instead if it is deeper.
                 ulong flippedResult;
-                if (TryGet(state.FlippedHash, out flippedResult))
+                if (TryGet(state.FlippedHash, out flippedResult)
+                    && (flippedResult & 0x3F) > (result & 0x3F))
                 {
-                    if ((flippedResult & 0x3F) > (result & 0x3F))
-                    {
-                        result = flippedResult;
-                    }
+                    result = flippedResult;
                 }
 
                 bestMove = (int)((result >> 16) & 0x7);
