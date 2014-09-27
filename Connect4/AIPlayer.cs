@@ -16,15 +16,18 @@ namespace Connect4
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
 
         // Search options.
-        private readonly int moveLookAhead = 18;
-        private const bool useLMR = true;
+        private readonly int moveLookAhead = 19;
+        private const bool useLMR = false;
         private const int lmrDepthChange = 1;
         private const int lmrMinDepth = 3;
+        private const bool useNullMovePruning = false;  // Not completed.
+        private const int nullMovePruningReduction = 2;
+        private const int nullMovePruningMinDepth = 3;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
         private int[][] killerMovesTable;
-        private int[] staticMoveOrdering = new int[] { 1, 5, 4, 3, 2, 0, 6 };
+        private int[] staticMoveOrdering = new int[] { 3, 2, 4, 1, 5, 0, 6 };
 
         // Fields used during search.
         private int moveNumber = 0;
@@ -130,7 +133,7 @@ namespace Connect4
                 DateTime startTime = DateTime.Now;
 
                 score = NegaScout(moveNumber, moveNumber + depth, grid, player,
-                    -infinity, infinity, true);
+                    -infinity, infinity);
                 grid.ClearMoveHistory();
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
@@ -156,7 +159,7 @@ namespace Connect4
         }
 
         private int NegaScout(int currentDepth, int searchDepth, Grid state, int currentPlayer,
-            int alpha, int beta, bool isParentPVNode)
+            int alpha, int beta)
         {
             Debug.Assert(currentDepth <= searchDepth);
 
@@ -261,6 +264,21 @@ namespace Connect4
             }
 
             int childScore;
+
+            // See if the player can maintain an advantage even after forfeiting
+            // this move.
+            if (useNullMovePruning
+                && searchDepth - currentDepth >= nullMovePruningMinDepth)
+            {
+                childScore = -NegaScout(currentDepth + 1, searchDepth - nullMovePruningReduction,
+                    state, 1 - currentPlayer, -beta, -beta + 1);
+
+                if (childScore >= beta)
+                {
+                    return childScore;
+                }
+            }
+
             int bestMove = -1;
 
             int alphaScout = alpha;
@@ -334,11 +352,10 @@ namespace Connect4
                 if (useLMR
                     && movesSearched >= orderedMoves
                     && searchDepth - currentDepth >= lmrMinDepth
-                    && !isParentPVNode
                     && flag != NodeTypeExact)
                 {
                     childScore = -NegaScout(currentDepth + 1, searchDepth - lmrDepthChange,
-                        state, 1 - currentPlayer, -betaScout, -alphaScout, false);
+                        state, 1 - currentPlayer, -betaScout, -alphaScout);
                 }
 
                 // Otherwise, force the next condition to hold.
@@ -352,7 +369,7 @@ namespace Connect4
                 if (childScore > alphaScout)
                 {
                     childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -betaScout, -alphaScout, flag == NodeTypeExact);
+                        1 - currentPlayer, -betaScout, -alphaScout);
 
                     // Rerun the search with a wider window if the returned score
                     // is inside the bounds and this is a PV-node.
@@ -360,7 +377,7 @@ namespace Connect4
                     {
                         state.SetLastMove(move);
                         alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
-                            1 - currentPlayer, -beta, -childScore, flag == NodeTypeExact);
+                            1 - currentPlayer, -beta, -childScore);
 
                         bestMove = move;
                         flag = NodeTypeExact;
