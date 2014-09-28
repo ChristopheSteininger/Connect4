@@ -147,17 +147,11 @@ namespace Connect4
             nextFreeTile[column]++;
 
             lastMove = column;
-
-            // Update the 3 piece streak count.
-            LazyUpdatePlayerStreaks(player, column, true);
         }
 
         public void UndoMove(int column, int player)
         {
             Debug.Assert(0 <= column && column < width);
-
-            // Update the 3 piece streak count.
-            LazyUpdatePlayerStreaks(player, column, false);
 
             int row = --nextFreeTile[column];
             Debug.Assert(0 <= row && row < height);

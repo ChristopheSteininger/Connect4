@@ -16,7 +16,7 @@ namespace Connect4
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
 
         // Search options.
-        private readonly int moveLookAhead = 19;
+        private readonly int moveLookAhead = 24;
         private const bool useLMR = false;
         private const int lmrDepthChange = 1;
         private const int lmrMinDepth = 3;
@@ -111,11 +111,6 @@ namespace Connect4
 
             int score = -1;
 
-            // Only update the streak count for the AI player, no need
-            // the evaluate after the opposing player's move.
-            grid.UpdateLazyStreakCountForPlayer[player] = true;
-            grid.UpdateLazyStreakCountForPlayer[1 - player] = false;
-
             // Calculate the depth of this search.
             int iterations = Math.Min(moveLookAhead, maxMoves - moveNumber);
 
@@ -140,9 +135,11 @@ namespace Connect4
                 totalRuntime += runtimes[depth - 1];
 
                 // Clear the itertion start time text.
-                Console.SetCursorPosition(Console.CursorLeft - updateText.Length, Console.CursorTop);
+                Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
+                    Console.CursorTop);
                 Console.Write(new String(' ', updateText.Length));
-                Console.SetCursorPosition(Console.CursorLeft - updateText.Length, Console.CursorTop);
+                Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
+                    Console.CursorTop);
             }
 
             PrintMoveStatistics(runtimes, grid, finalMove, score);
@@ -189,7 +186,7 @@ namespace Connect4
             {
                 Debug.Assert(currentDepth != moveNumber);
 
-                return state.StreakCount[player];
+                return 0;
             }
 
             // Will be set to the best move of the lookup.
