@@ -11,14 +11,14 @@ namespace Connect4
         // The number of most significant bits of a state's hash to use as
         // the index into the table. Determines the size of the table.
         // 26 gives a 1 GB table. Must at least as big as indexBits.
-        private const int hashIndexBits = 25;
+        private const int hashIndexBits = 26;
 
         // The number of bits of a state's hash to store in the index.
         // Do not change this number.
         private const int indexBits = 19;
 
         public const int TableSize = 1 << (hashIndexBits + 1);
-        public const int MemorySpaceBytes = sizeof(ulong) * TableSize;
+        public const long MemorySpaceBytes = sizeof(ulong) * (long)TableSize;
 
         private ulong[] table = new ulong[TableSize];
 

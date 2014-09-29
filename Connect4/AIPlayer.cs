@@ -134,7 +134,7 @@ namespace Connect4
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
                 totalRuntime += runtimes[depth - 1];
 
-                // Clear the itertion start time text.
+                // Clear the iteration start time text.
                 Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
                     Console.CursorTop);
                 Console.Write(new String(' ', updateText.Length));
@@ -265,23 +265,38 @@ namespace Connect4
             // Check for forced moves.
             for (int move = 0; move < state.Width; move++)
             {
-                // If the opponent can win with this move, then the current player
-                // must play the move instead.
-                if (state.LazyIsGameOverAndIsValidMove(1 - currentPlayer, move))
+                if (state.IsValidMove(move))
                 {
-                    state.Move(move, currentPlayer);
-                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -beta, -alpha);
-                    state.UndoMove(move, currentPlayer);
-
-                    if (currentDepth == moveNumber)
+                    // If the player can win on this move then return immediately,
+                    // no more evaluation is needed.
+                    if (state.LazyIsGameOverOnMove(currentPlayer, move))
                     {
-                        finalMove = move;
+                        if (currentDepth == moveNumber)
+                        {
+                            finalMove = move;
+                        }
+
+                        return infinity;
                     }
 
-                    // TODO: Store in transposition table?
+                    // If the opponent can win with this move, then the current player
+                    // must play the move instead.
+                    if (state.LazyIsGameOverOnMove(1 - currentPlayer, move))
+                    {
+                        state.Move(move, currentPlayer);
+                        childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                            1 - currentPlayer, -beta, -alpha);
+                        state.UndoMove(move, currentPlayer);
 
-                    return childScore;
+                        if (currentDepth == moveNumber)
+                        {
+                            finalMove = move;
+                        }
+
+                        // TODO: Store in transposition table?
+
+                        return childScore;
+                    }
                 }
             }
 
