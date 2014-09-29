@@ -22,17 +22,17 @@ namespace Connect4
 
         private ulong[] table = new ulong[TableSize];
 
-        private int size = 0;
-        public int Size { get { return size; } }
+        private long size = 0;
+        public long Size { get { return size; } }
 
-        private int insertions = 0;
-        public int Insertions { get { return insertions; } }
+        private long insertions = 0;
+        public long Insertions { get { return insertions; } }
 
-        private int requests = 0;
-        public int Requests { get { return requests; } }
+        private long requests = 0;
+        public long Requests { get { return requests; } }
 
-        private int collisions = 0;
-        public int Collisions { get { return collisions; } }
+        private long collisions = 0;
+        public long Collisions { get { return collisions; } }
 
         public void Add(int depth, int bestMove, ulong hash, int score,
             int nodeType)
@@ -162,7 +162,7 @@ namespace Connect4
 
         public static int GetScore(ulong data)
         {
-            return (int)((data >> 8) & 0xFF) - 128;
+            return (int)(((data >> 8) & 0xFF) - 128);
         }
 
         public static int GetBestMove(ulong data)

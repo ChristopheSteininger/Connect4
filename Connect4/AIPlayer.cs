@@ -38,11 +38,11 @@ namespace Connect4
         // Statistics for log.
         private bool printToConsole = true;
         private long totalNodesSearched;
-        private int endNodesSearched;
-        private int shallowTableLookups;
-        private int tableLookups;
-        private int alphaBetaCutoffs;
-        private int betaCutoffs;
+        private long endNodesSearched;
+        private long shallowTableLookups;
+        private long tableLookups;
+        private long alphaBetaCutoffs;
+        private long betaCutoffs;
         private double totalRuntime = 0;
 
         public AIPlayer(int player, Board board)
@@ -109,8 +109,6 @@ namespace Connect4
             alphaBetaCutoffs = 0;
             betaCutoffs = 0;
 
-            int score = -1;
-
             // Calculate the depth of this search.
             int iterations = Math.Min(moveLookAhead, maxMoves - moveNumber);
 
@@ -127,7 +125,7 @@ namespace Connect4
 
                 DateTime startTime = DateTime.Now;
 
-                score = NegaScout(moveNumber, moveNumber + depth, grid, player,
+                NegaScout(moveNumber, moveNumber + depth, grid, player,
                     -infinity, infinity);
                 grid.ClearMoveHistory();
 
@@ -142,7 +140,32 @@ namespace Connect4
                     Console.CursorTop);
             }
 
-            PrintMoveStatistics(runtimes, grid, finalMove, score);
+            // Retrieve the score of each move.
+            int[] scores = new int[grid.Width];
+            int[] scoreTypes = new int[grid.Width];
+            for (int move = 0; move < grid.Width; move++)
+            {
+                if (grid.IsValidMove(move))
+                {
+                    grid.Move(move, player);
+
+                    ulong entry;
+                    int dummy;
+                    if (transpositionTable.Lookup(grid, out entry, out dummy))
+                    {
+                        scores[move] = -TranspositionTable.GetScore(entry);
+                        scoreTypes[move] = TranspositionTable.GetNodeType(entry);
+                    }
+                    else
+                    {
+                        scoreTypes[move] = -1;
+                    }
+
+                    grid.UndoMove(move, player);
+                }
+            }
+
+            PrintMoveStatistics(runtimes, grid, finalMove, scores, scoreTypes);
 
             moveNumber += 2;
 
@@ -207,7 +230,7 @@ namespace Connect4
                     tableLookups++;
 
                     // The score is stored in bits 8 to 15 of the entry.
-                    int entryScore = (int)((entry >> 8) & 0xFF) - 128;
+                    int entryScore = (int)(((entry >> 8) & 0xFF) - 128);
 
                     // The type is stored in bits 6 to 7 of the entry.
                     int entryType = (int)((entry >> 6) & 0x3);
@@ -464,8 +487,11 @@ namespace Connect4
             return alphaScout;
         }
 
-        private void PrintMoveStatistics(double[] runtimes, Grid grid, int move, int score)
+        private void PrintMoveStatistics(double[] runtimes, Grid grid, int move,
+            int[] scores, int[] scoreTypes)
         {
+            Debug.Assert(scores.Length == scoreTypes.Length);
+
             log.WriteLine("Done");
 
             // Calculate the total runtime.
@@ -491,25 +517,59 @@ namespace Connect4
             log.WriteLine("{0:N0} cutoffs from lookups and {1:N0} beta cutoffs.",
                 alphaBetaCutoffs, betaCutoffs);
 
-            log.WriteLine("Move is {0:N0}.", move);
-            if (score == infinity)
+            // Print the scores of each move.
+            log.Write("The move scores are");
+            for (int i = 0; i < scores.Length; i++)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                log.WriteLine("AI win is guaranteed.");
-                Console.ResetColor();
+                if (grid.IsValidMove(i))
+                {
+                    log.Write("  {0}:", i);
+
+                    if (scoreTypes[i] == -1)
+                    {
+                        log.Write("-");
+                    }
+
+                    else
+                    {
+                        if (scores[i] == infinity)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            log.WriteToLog("+\u221E");
+                            Console.Write("+Inf");
+                            Console.ResetColor();
+                        }
+
+                        else if (scores[i] == -infinity)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            log.WriteToLog("-\u221E");
+                            Console.Write("-Inf");
+                            Console.ResetColor();
+                        }
+
+                        else
+                        {
+                            log.Write("{0}", scores[i]);
+                        }
+
+                        switch (scoreTypes[i])
+                        {
+                            case NodeTypeExact:
+                                log.Write("E");
+                                break;
+                            case NodeTypeLower:
+                                log.Write("L");
+                                break;
+                            case NodeTypeUpper:
+                                log.Write("U");
+                                break;
+                        }
+                    }
+                }
             }
 
-            else if (score == -infinity)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                log.WriteLine("AI loss is guaranteed (Assuming perfect play).");
-                Console.ResetColor();
-            }
-
-            else
-            {
-                log.WriteLine("Move score is {0:N0}.", score);
-            }
+            log.WriteLine("\nMove is {0:N0}.", move);
 
             // Print the runtime of each iteration.
             log.WriteLine();

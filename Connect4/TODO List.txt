@@ -11,7 +11,6 @@
     > The 3 piece streak may not even be a good heuristic.
   - Parallel Minimax. Use ABDADA instead of YBWC.
   - The Move()/UndoMove() methods are the new bottlenecks.
-  - Detect forced moves?
 
 * Testing.
   - Whole system test: create an auto player which systematically plays, at least,
@@ -28,5 +27,6 @@
       Column 5: Loss
       Column 6: Heavy Loss
     This will also simplify the NegaMax function by removing the last two arguments.
+    > Could also run the iterative deepening loop after applying all possible moves.
 
 * Improve the interaction between the Board class and the form.
