@@ -150,14 +150,14 @@ namespace Connect4
             // Retrieve the score of each move.
             int[] scores = new int[grid.Width];
             int[] scoreTypes = new int[grid.Width];
+            ulong entry;
+            int dummy;
             for (int move = 0; move < grid.Width; move++)
             {
                 if (grid.IsValidMove(move))
                 {
                     grid.Move(move, player);
 
-                    ulong entry;
-                    int dummy;
                     if (transpositionTable.Lookup(grid, out entry, out dummy))
                     {
                         scores[move] = -TranspositionTable.GetScore(entry);
@@ -198,8 +198,8 @@ namespace Connect4
                 Debug.Assert(currentDepth != moveNumber);
                 endNodesSearched++;
 
-                // Return the minimum value since the opposing player won the game.
-                return -infinity;
+                // Return the score of losing on the last move.
+                return -(43 - (currentDepth - 1));
             }
 
             // If there are no valid moves, then this is a draw.
@@ -306,11 +306,11 @@ namespace Connect4
                             finalMove = move;
                         }
 
-                        return infinity;
+                        return 43 - currentDepth;
                     }
 
                     // If the opponent can win with this move, then the current player
-                    // must play the move instead.
+                    // must play that move instead.
                     if (state.LazyIsGameOverOnMove(1 - currentPlayer, move))
                     {
                         state.Move(move, currentPlayer);
@@ -322,8 +322,6 @@ namespace Connect4
                         {
                             finalMove = move;
                         }
-
-                        // TODO: Store in transposition table?
 
                         return childScore;
                     }
@@ -526,7 +524,7 @@ namespace Connect4
             log.WriteLine("{0:N0} cutoffs from lookups and {1:N0} beta cutoffs.",
                 alphaBetaCutoffs, betaCutoffs);
 
-            // Print the scores of each move.
+            // Print the scores of each valid move.
             log.Write("The move scores are");
             for (int i = 0; i < scores.Length; i++)
             {
@@ -579,6 +577,22 @@ namespace Connect4
             }
 
             log.WriteLine();
+
+            // Print the score of the chosen move.
+            if (scores[move] > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                log.WriteLine("AI will win latest on move {0}.", 43 - scores[move]);
+                Console.ResetColor();
+            }
+            else if (scores[move] < 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                log.WriteLine("AI will lose on move {0} (assuming perfect play).",
+                    43 + scores[move]);
+                Console.ResetColor();
+            }
+
             log.WriteLine("Move is {0:N0}.", move);
 
             // Print the runtime of each iteration.
