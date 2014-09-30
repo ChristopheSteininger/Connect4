@@ -61,7 +61,7 @@ namespace Connect4
 
         private void CreateAIPlayer(int seed)
         {
-            killerMovesTable = new int[maxMoves - 1][];
+            killerMovesTable = new int[maxMoves][];
             for (int i = 0; i < killerMovesTable.Length; i++)
             {
                 killerMovesTable[i] = new int[killerMovesEntrySize];
@@ -110,17 +110,24 @@ namespace Connect4
             betaCutoffs = 0;
 
             // Calculate the depth of this search.
-            int iterations = Math.Min(moveLookAhead, maxMoves - moveNumber);
+            int maxDepth = Math.Min(moveLookAhead, maxMoves - moveNumber);
 
             // The runtime of each iteration in milliseconds.
-            double[] runtimes = new double[iterations];
+            double[] runtimes = new double[maxDepth];
 
             // Get the best move and measure the runtime.
-            for (int depth = 1; depth <= iterations; depth++)
+            for (int depth = 1; depth <= maxDepth; depth++)
             {
+                // The branching factor is too small after move 23 to continue using
+                // iterative deepening.
+                if (moveNumber + depth >= 23)
+                {
+                    depth = maxDepth;
+                }
+
                 // Print the start time of this iteration.
                 string updateText = String.Format(
-                    "(Current iteration is {0}, began on {1})", depth, DateTime.Now.TimeOfDay);
+                    "(Current look ahead is {0}, began at {1})", depth, DateTime.Now.TimeOfDay);
                 Console.Write(updateText);
 
                 DateTime startTime = DateTime.Now;
@@ -509,10 +516,12 @@ namespace Connect4
 
             // Print the number of nodes looked at and the search time.
             double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
+            string minutes = (runtime > 60000)
+                ? String.Format(" ({0:N2} minutes)", runtime / 60000.0) : "";
             log.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
                 totalNodesSearched, endNodesSearched);
-            log.WriteLine("Runtime {0:N} ms ({1:N} states / ms).", runtime,
-                nodesPerMillisecond);
+            log.WriteLine("Runtime {0:N} ms{1} ({2:N} states / ms).", runtime,
+                minutes, nodesPerMillisecond);
             log.WriteLine("Total runtime {0:N} ms.", totalRuntime);
             log.WriteLine("{0:N0} cutoffs from lookups and {1:N0} beta cutoffs.",
                 alphaBetaCutoffs, betaCutoffs);
@@ -569,7 +578,8 @@ namespace Connect4
                 }
             }
 
-            log.WriteLine("\nMove is {0:N0}.", move);
+            log.WriteLine();
+            log.WriteLine("Move is {0:N0}.", move);
 
             // Print the runtime of each iteration.
             log.WriteLine();
@@ -580,7 +590,7 @@ namespace Connect4
                 log.Write(" +{0,-2}: {1,8:N2} ms", i + 1, runtimes[i]);
 
                 // Print the percentage of time spent in this iteration.
-                log.Write(", {0,5:N2}%", runtimes[i] * 100 / runtime);
+                log.Write(", {0,15:N2}%", runtimes[i] * 100 / runtime);
 
                 // Print how much longer this iteration took than the last.
                 if (i > 0)
