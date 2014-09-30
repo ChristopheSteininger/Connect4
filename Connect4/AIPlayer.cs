@@ -17,12 +17,6 @@ namespace Connect4
 
         // Search options.
         private readonly int moveLookAhead = 24;
-        private const bool useLMR = false;
-        private const int lmrDepthChange = 1;
-        private const int lmrMinDepth = 3;
-        private const bool useNullMovePruning = false;  // Not completed.
-        private const int nullMovePruningReduction = 2;
-        private const int nullMovePruningMinDepth = 3;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
@@ -115,6 +109,8 @@ namespace Connect4
             // The runtime of each iteration in milliseconds.
             double[] runtimes = new double[maxDepth];
 
+            int score = -1;
+
             // Get the best move and measure the runtime.
             for (int depth = 1; depth <= maxDepth; depth++)
             {
@@ -132,7 +128,7 @@ namespace Connect4
 
                 DateTime startTime = DateTime.Now;
 
-                NegaScout(moveNumber, moveNumber + depth, grid, player,
+                score = NegaScout(moveNumber, moveNumber + depth, grid, player,
                     -infinity, infinity);
                 grid.ClearMoveHistory();
 
@@ -172,7 +168,7 @@ namespace Connect4
                 }
             }
 
-            PrintMoveStatistics(runtimes, grid, finalMove, scores, scoreTypes);
+            PrintMoveStatistics(runtimes, grid, finalMove, score, scores, scoreTypes);
 
             moveNumber += 2;
 
@@ -199,7 +195,7 @@ namespace Connect4
                 endNodesSearched++;
 
                 // Return the score of losing on the last move.
-                return -(43 - (currentDepth - 1));
+                return -44 + currentDepth;
             }
 
             // If there are no valid moves, then this is a draw.
@@ -297,6 +293,8 @@ namespace Connect4
             {
                 if (state.IsValidMove(move))
                 {
+                    // TODO: Run this check in a seperate loop first?
+
                     // If the player can win on this move then return immediately,
                     // no more evaluation is needed.
                     if (state.LazyIsGameOverOnMove(currentPlayer, move))
@@ -328,23 +326,8 @@ namespace Connect4
                 }
             }
 
-            // See if the player can maintain an advantage even after forfeiting
-            // this move.
-            if (useNullMovePruning
-                && searchDepth - currentDepth >= nullMovePruningMinDepth)
-            {
-                childScore = -NegaScout(currentDepth + 1, searchDepth - nullMovePruningReduction,
-                    state, 1 - currentPlayer, -beta, -beta + 1);
-
-                if (childScore >= beta)
-                {
-                    return childScore;
-                }
-            }
-
             int bestMove = -1;
 
-            int alphaScout = alpha;
             int betaScout = beta;
 
             int[] killerMoves = killerMovesTable[currentDepth];
@@ -410,55 +393,33 @@ namespace Connect4
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
 
-                // If this is likely to be an all-node, reduce the depth of future
-                // searches.
-                if (useLMR
-                    && movesSearched >= orderedMoves
-                    && searchDepth - currentDepth >= lmrMinDepth
-                    && flag != NodeTypeExact)
+                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -betaScout, -alpha);
+
+                // Rerun the search with a wider window if the returned score
+                // is inside the bounds and this is a PV-node.
+                if (alpha < childScore && childScore < beta && !isFirstChild)
                 {
-                    childScore = -NegaScout(currentDepth + 1, searchDepth - lmrDepthChange,
-                        state, 1 - currentPlayer, -betaScout, -alphaScout);
-                }
+                    state.SetLastMove(move);
+                    alpha = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -beta, -childScore);
 
-                // Otherwise, force the next condition to hold.
-                else
-                {
-                    childScore = alphaScout + 1;
-                }
-
-                // Test if an LMR child returned a suprising result, or if this is
-                // a normal search.
-                if (childScore > alphaScout)
-                {
-                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -betaScout, -alphaScout);
-
-                    // Rerun the search with a wider window if the returned score
-                    // is inside the bounds and this is a PV-node.
-                    if (alphaScout < childScore && childScore < beta && !isFirstChild)
-                    {
-                        state.SetLastMove(move);
-                        alphaScout = -NegaScout(currentDepth + 1, searchDepth, state,
-                            1 - currentPlayer, -beta, -childScore);
-
-                        bestMove = move;
-                        flag = NodeTypeExact;
-                    }
+                    bestMove = move;
+                    flag = NodeTypeExact;
                 }
 
                 state.UndoMove(move, currentPlayer);
 
                 // Check if this is a PV-node and the lower bound can be improved.
-                if (childScore > alphaScout)
+                if (childScore > alpha)
                 {
-                    alphaScout = childScore;
+                    alpha = childScore;
                     flag = NodeTypeExact;
                     bestMove = move;
                 }
 
                 // Check if this a beta cutoff. AKA a fail-high.
-                if (alphaScout >= beta)
+                if (alpha >= beta)
                 {
                     betaCutoffs++;
 
@@ -473,7 +434,7 @@ namespace Connect4
                 }
 
                 // Update the null window.
-                betaScout = alphaScout + 1;
+                betaScout = alpha + 1;
 
                 isFirstChild = false;
                 movesSearched++;
@@ -482,18 +443,18 @@ namespace Connect4
             Debug.Assert(bestMove != -1);
 
             // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, alphaScout, flag);
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, alpha, flag);
 
             if (currentDepth == moveNumber)
             {
                 finalMove = bestMove;
             }
 
-            return alphaScout;
+            return alpha;
         }
 
         private void PrintMoveStatistics(double[] runtimes, Grid grid, int move,
-            int[] scores, int[] scoreTypes)
+            int score, int[] scores, int[] scoreTypes)
         {
             Debug.Assert(scores.Length == scoreTypes.Length);
 
@@ -579,17 +540,17 @@ namespace Connect4
             log.WriteLine();
 
             // Print the score of the chosen move.
-            if (scores[move] > 0)
+            if (score > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                log.WriteLine("AI will win latest on move {0}.", 43 - scores[move]);
+                log.WriteLine("AI will win latest on move {0}.", 43 - score);
                 Console.ResetColor();
             }
-            else if (scores[move] < 0)
+            else if (score < 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 log.WriteLine("AI will lose on move {0} (assuming perfect play).",
-                    43 + scores[move]);
+                    43 + score);
                 Console.ResetColor();
             }
 

@@ -59,6 +59,7 @@ namespace Connect4
             else if (GetDepth(currentEntry) < depth)
             {
                 collisions++;
+                table[index + 1] = currentEntry;
                 table[index] = entry;
             }
 
