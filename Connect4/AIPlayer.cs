@@ -215,6 +215,45 @@ namespace Connect4
                 return 0;
             }
 
+            int childScore;
+
+            // If the player can win on this move then return immediately,
+            // no more evaluation is needed.
+            for (int move = 0; move < state.Width; move++)
+            {
+                if (state.IsValidMove(move)
+                    && state.LazyIsGameOverOnMove(currentPlayer, move))
+                {
+                    if (currentDepth == moveNumber)
+                    {
+                        finalMove = move;
+                    }
+
+                    return 43 - currentDepth;
+                }
+            }
+
+            // If the opponent can win with this move, then the current player
+            // must play that move instead.
+            for (int move = 0; move < state.Width; move++)
+            {
+                if (state.IsValidMove(move)
+                    && state.LazyIsGameOverOnMove(1 - currentPlayer, move))
+                {
+                    state.Move(move, currentPlayer);
+                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                        1 - currentPlayer, -beta, -alpha);
+                    state.UndoMove(move, currentPlayer);
+
+                    if (currentDepth == moveNumber)
+                    {
+                        finalMove = move;
+                    }
+
+                    return childScore;
+                }
+            }
+
             // Will be set to the best move of the lookup.
             int entryBestMove;
 
@@ -283,46 +322,6 @@ namespace Connect4
                 else
                 {
                     shallowTableLookups++;
-                }
-            }
-
-            int childScore;
-
-            // Check for forced moves.
-            for (int move = 0; move < state.Width; move++)
-            {
-                if (state.IsValidMove(move))
-                {
-                    // TODO: Run this check in a seperate loop first?
-
-                    // If the player can win on this move then return immediately,
-                    // no more evaluation is needed.
-                    if (state.LazyIsGameOverOnMove(currentPlayer, move))
-                    {
-                        if (currentDepth == moveNumber)
-                        {
-                            finalMove = move;
-                        }
-
-                        return 43 - currentDepth;
-                    }
-
-                    // If the opponent can win with this move, then the current player
-                    // must play that move instead.
-                    if (state.LazyIsGameOverOnMove(1 - currentPlayer, move))
-                    {
-                        state.Move(move, currentPlayer);
-                        childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                            1 - currentPlayer, -beta, -alpha);
-                        state.UndoMove(move, currentPlayer);
-
-                        if (currentDepth == moveNumber)
-                        {
-                            finalMove = move;
-                        }
-
-                        return childScore;
-                    }
                 }
             }
 
