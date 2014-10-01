@@ -16,7 +16,7 @@ namespace Connect4
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
 
         // Search options.
-        private readonly int moveLookAhead = 24;
+        private readonly int moveLookAhead = 29;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
@@ -418,14 +418,19 @@ namespace Connect4
                     bestMove = move;
                 }
 
-                // Check if this a beta cutoff. AKA a fail-high.
+                // Check if this a beta cutoff.
                 if (alpha >= beta)
                 {
                     betaCutoffs++;
 
-                    // Remember this move as a killer move at the current depth.
-                    killerMoves[1] = killerMoves[0];
-                    killerMoves[0] = bestMove;
+                    // Do not store this move as a killer move if it is already in
+                    // the first slot and both slots are in use (not equal to -1),
+                    // or if it's not in the first slot and the second slot is empty.
+                    if (killerMoves[0] != bestMove ^ killerMoves[1] == -1)
+                    {
+                        killerMoves[1] = killerMoves[0];
+                        killerMoves[0] = bestMove;
+                    }
 
                     // This is a cut-node, so the score is a lower bound.
                     flag = NodeTypeLower;
@@ -552,6 +557,10 @@ namespace Connect4
                 log.WriteLine("AI will lose on move {0} (assuming perfect play).",
                     43 + score);
                 Console.ResetColor();
+            }
+            else
+            {
+                log.WriteLine("Move score is {0}", score);
             }
 
             log.WriteLine("Move is {0:N0}.", move);

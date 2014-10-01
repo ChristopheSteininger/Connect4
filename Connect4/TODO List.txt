@@ -11,6 +11,7 @@
     > The 3 piece streak may not even be a good heuristic.
   - Parallel Minimax. Use ABDADA instead of YBWC.
   - The Move()/UndoMove() methods are the new bottlenecks.
+  - Try killer moves from depth - 2.
 
 * Testing.
   - Whole system test: create an auto player which systematically plays, at least,
