@@ -33,10 +33,15 @@ namespace Connect4
         private bool printToConsole = true;
         private long totalNodesSearched;
         private long endNodesSearched;
+        private long pvNodes;
+        private long cutNodes;
+        private long allNodes;
         private long shallowTableLookups;
         private long tableLookups;
         private long alphaBetaCutoffs;
         private long betaCutoffs;
+        private long betaCutoffsOnFirstChild;
+        private long betaCutoffsOnOrderedChildren;
         private double totalRuntime = 0;
 
         public AIPlayer(int player, Board board)
@@ -98,10 +103,15 @@ namespace Connect4
             // Reset statistics counters.
             totalNodesSearched = 0;
             endNodesSearched = 0;
+            pvNodes = 0;
+            cutNodes = 0;
+            allNodes = 0;
             shallowTableLookups = 0;
             tableLookups = 0;
             alphaBetaCutoffs = 0;
             betaCutoffs = 0;
+            betaCutoffsOnFirstChild = 0;
+            betaCutoffsOnOrderedChildren = 0;
 
             // Calculate the depth of this search.
             int maxDepth = Math.Min(moveLookAhead, maxMoves - moveNumber);
@@ -421,6 +431,14 @@ namespace Connect4
                 if (alpha >= beta)
                 {
                     betaCutoffs++;
+                    if (isFirstChild)
+                    {
+                        betaCutoffsOnFirstChild++;
+                    }
+                    if (i < 0)
+                    {
+                        betaCutoffsOnOrderedChildren++;
+                    }
 
                     // Do not store this move as a killer move if it is already in
                     // the first slot and both slots are in use (not equal to -1),
@@ -448,6 +466,20 @@ namespace Connect4
 
             // Store the score in the t-table in case the same state is reached later.
             transpositionTable.Add(searchDepth, bestMove, state.Hash, alpha, flag);
+
+            // Update node type counter.
+            switch (flag)
+            {
+                case NodeTypeExact:
+                    pvNodes++;
+                    break;
+                case NodeTypeLower:
+                    cutNodes++;
+                    break;
+                case NodeTypeUpper:
+                    allNodes++;
+                    break;
+            }
 
             if (currentDepth == moveNumber)
             {
@@ -477,17 +509,27 @@ namespace Connect4
             log.WriteLineToLog(grid.ToString());
             log.WriteLineToLog();
 
-            // Print the number of nodes looked at and the search time.
+            // Print node statistics.
+            double cutoffsOnFirstChild = betaCutoffsOnFirstChild * 100D / betaCutoffs;
+            double cutoffsOnOrderedChildren = betaCutoffsOnOrderedChildren * 100D / betaCutoffs;
+            log.Write("Analysed ");
+            WriteWithColor("{0:N0}", ConsoleColor.White, totalNodesSearched);
+            log.WriteLine(" states, including {0:N0} end states.", endNodesSearched);
+            log.WriteLine("   Searched {0:N0} pv-nodes, {1:N0} cut-nodes and {2:N0} all-nodes.",
+                pvNodes, cutNodes, allNodes);
+            log.WriteLine("   {0:N0} cutoffs from lookups.", alphaBetaCutoffs);
+            log.WriteLine("   {0:N0} beta cutoffs ({1:N2}% on first child, {2:N2}% on "
+                + "ordered children).", betaCutoffs, cutoffsOnFirstChild,
+                cutoffsOnOrderedChildren);
+
+            // Print runtime statistics.
             double nodesPerMillisecond = Math.Round(totalNodesSearched / runtime, 4);
             string minutes = (runtime > 60000)
                 ? String.Format(" ({0:N2} minutes)", runtime / 60000.0) : "";
-            log.WriteLine("Analysed {0:N0} states, including {1:N0} end states.",
-                totalNodesSearched, endNodesSearched);
-            log.WriteLine("Runtime {0:N} ms{1} ({2:N} states / ms).", runtime,
-                minutes, nodesPerMillisecond);
-            log.WriteLine("Total runtime {0:N} ms.", totalRuntime);
-            log.WriteLine("{0:N0} cutoffs from lookups and {1:N0} beta cutoffs.",
-                alphaBetaCutoffs, betaCutoffs);
+            log.Write("Runtime {0:N} ms{1} (", runtime, minutes);
+            WriteWithColor("{0:N}", ConsoleColor.White, nodesPerMillisecond);
+            log.WriteLine(" states / ms).");
+            log.WriteLine("   Total runtime {0:N} ms.", totalRuntime);
 
             // Print the scores of each valid move.
             log.Write("The move scores are");
@@ -506,16 +548,16 @@ namespace Connect4
                     {
                         if (scores[i] == infinity)
                         {
-                            Console.ForegroundColor = ConsoleColor.Green;
                             log.WriteToLog("+\u221E");
+                            Console.ForegroundColor = ConsoleColor.Green;
                             Console.Write("+Inf");
                             Console.ResetColor();
                         }
 
                         else if (scores[i] == -infinity)
                         {
-                            Console.ForegroundColor = ConsoleColor.Red;
                             log.WriteToLog("-\u221E");
+                            Console.ForegroundColor = ConsoleColor.Red;
                             Console.Write("-Inf");
                             Console.ResetColor();
                         }
@@ -546,23 +588,20 @@ namespace Connect4
             // Print the score of the chosen move.
             if (score > 0)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                log.WriteLine("AI will win latest on move {0}.", 43 - score);
-                Console.ResetColor();
+                WriteLineWithColor("   AI will win latest on move {0}.",
+                    ConsoleColor.Green, 43 - score);
             }
             else if (score < 0)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                log.WriteLine("AI will lose on move {0} (assuming perfect play).",
-                    43 + score);
-                Console.ResetColor();
+                WriteLineWithColor("   AI will lose on move {0} (assuming perfect play).",
+                    ConsoleColor.Red, 43 + score);
             }
             else
             {
-                log.WriteLine("Move score is {0}", score);
+                log.WriteLine("   Move score is {0}.", score);
             }
 
-            log.WriteLine("Move is {0:N0}.", move);
+            log.WriteLine("   Move is {0:N0}.", move);
 
             // Print the runtime of each iteration.
             log.WriteLine();
@@ -570,10 +609,10 @@ namespace Connect4
 
             for (int i = 0; i < runtimes.Length; i++)
             {
-                log.Write(" +{0,-2}: {1,8:N2} ms", i + 1, runtimes[i]);
+                log.Write(" +{0,-2}: {1,11:N2} ms", i + 1, runtimes[i]);
 
                 // Print the percentage of time spent in this iteration.
-                log.Write(", {0,15:N2}%", runtimes[i] * 100 / runtime);
+                log.Write(", {0,9:N2}%", runtimes[i] * 100 / runtime);
 
                 // Print how much longer this iteration took than the last.
                 if (i > 0)
@@ -592,24 +631,39 @@ namespace Connect4
             // Print transposition table statistics.
             log.WriteLine();
             log.WriteLine("Transposition table:");
-            log.WriteLine("\tSize:                     {0:N0}", TranspositionTable.TableSize);
-            log.WriteLine("\tMemory Space:             {0:N0} MB",
+            log.WriteLine("   Size:                     {0:N0}", TranspositionTable.TableSize);
+            log.WriteLine("   Memory Space:             {0:N0} MB",
                 TranspositionTable.MemorySpaceBytes / 1024 / 1024);
-            log.WriteLine("\tShallow Lookups:          {0:N0}", shallowTableLookups);
-            log.WriteLine("\tLookups:                  {0:N0}", tableLookups);
-            log.WriteLine("\tRequests:                 {0:N0}",
+            log.WriteLine("   Shallow Lookups:          {0:N0}", shallowTableLookups);
+            log.WriteLine("   Lookups:                  {0:N0}", tableLookups);
+            log.WriteLine("   Requests:                 {0:N0}",
                 transpositionTable.Requests);
-            log.WriteLine("\tInsertions:               {0:N0}",
+            log.WriteLine("   Insertions:               {0:N0}",
                 transpositionTable.Insertions);
-            log.WriteLine("\tCollisions:               {0:N0}",
+            log.WriteLine("   Collisions:               {0:N0}",
                 transpositionTable.Collisions);
-            log.WriteLine("\tItems:                    {0:N0} ({1:N4}% full)",
+            log.WriteLine("   Items:                    {0:N0} ({1:N4}% full)",
                 transpositionTable.Size, 100.0 * transpositionTable.Size
                 / TranspositionTable.TableSize);
             transpositionTable.ResetStatistics();
 
             log.WriteLine();
             log.WriteLine();
+        }
+
+        private void WriteLineWithColor(string text, ConsoleColor color, params object[] args)
+        {
+            WriteWithColor(text, color, args);
+            log.WriteLine();
+        }
+
+        private void WriteWithColor(string text, ConsoleColor color, params object[] args)
+        {
+            text = (args != null) ? String.Format(text, args) : text;
+
+            Console.ForegroundColor = color;
+            log.Write(text);
+            Console.ResetColor();
         }
     }
 }
