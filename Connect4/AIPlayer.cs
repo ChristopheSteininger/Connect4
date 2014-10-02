@@ -178,7 +178,7 @@ namespace Connect4
                 }
             }
 
-            PrintMoveStatistics(runtimes, grid, finalMove, score, scores, scoreTypes);
+            PrintMoveStatistics(runtimes, grid, score, scores, scoreTypes);
 
             moveNumber += 2;
 
@@ -221,6 +221,7 @@ namespace Connect4
             if (currentDepth == searchDepth)
             {
                 Debug.Assert(currentDepth != moveNumber);
+                Debug.Assert(searchDepth != maxMoves);
 
                 return 0;
             }
@@ -335,12 +336,7 @@ namespace Connect4
                 }
             }
 
-            int bestMove = -1;
-
-            int betaScout = beta;
-
             int[] killerMoves = killerMovesTable[currentDepth];
-            int orderedMoves = 1 + killerMovesEntrySize;
 
             // A bitmap where a 1 means the corresponding move has already been
             // checked. Initialised with a 1 at all invalid moves.
@@ -350,50 +346,22 @@ namespace Connect4
             // moves.
             uint allMovesChecked = ((uint)1 << state.Width) - 1;
 
-            bool isFirstChild = true;
-
             // Assume that this is an all-node and therefore the score is an
             // upper bound on the true score until proven otherwise.
             int flag = NodeTypeUpper;
 
+            int betaScout = beta;
+            int bestMove = -1;
             int movesSearched = 0;
+            int index = -(1 + killerMovesEntrySize);
+            bool isFirstChild = true;
 
-            // Find the best move recursively. A negative i means
+            // Find the best move recursively. A negative index means
             // use the shallow lookup or killer move.
-            for (int i = -orderedMoves; i < state.Width
-                && checkedMoves != allMovesChecked; i++)
+            while (checkedMoves != allMovesChecked)
             {
-                int move;
-
-                // Use shallow moves first.
-                if (i == -orderedMoves)
-                {
-                    move = entryBestMove;
-                }
-
-                // Use the killer moves next.
-                else if (i < 0)
-                {
-                    move = killerMoves[i + killerMovesEntrySize];
-                }
-
-                // Otherwise, use the static move ordering.
-                else
-                {
-                    move = staticMoveOrdering[i];
-                }
-
-                // Only proceed if the move is valid and has not been checked yet.
-                uint moveMask = (uint)1 << move;
-                if (move < 0 || (checkedMoves & moveMask) == moveMask)
-                {
-                    continue;
-                }
-
-                // At this point, the move has been found, so mark the move
-                // as invalid for future iterations.
-                checkedMoves |= moveMask;
-
+                int move = GetNextMove(ref index, ref checkedMoves,
+                    entryBestMove, killerMoves);
                 if (isFirstChild)
                 {
                     bestMove = move;
@@ -435,7 +403,7 @@ namespace Connect4
                     {
                         betaCutoffsOnFirstChild++;
                     }
-                    if (i < 0)
+                    if (index <= 0)
                     {
                         betaCutoffsOnOrderedChildren++;
                     }
@@ -489,8 +457,38 @@ namespace Connect4
             return alpha;
         }
 
-        private void PrintMoveStatistics(double[] runtimes, Grid grid, int move,
-            int score, int[] scores, int[] scoreTypes)
+        private int GetNextMove(ref int i, ref uint checkedMoves, int shallowLookup,
+            int[] killerMoves)
+        {
+            int move;
+            int orderedMoves = 1 + killerMovesEntrySize;
+            uint moveMask;
+            do
+            {
+                if (i == -orderedMoves)
+                {
+                    move = shallowLookup;
+                }
+                else if (i < 0)
+                {
+                    move = killerMoves[i + killerMovesEntrySize];
+                }
+                else
+                {
+                    move = staticMoveOrdering[i];
+                }
+
+                i++;
+                moveMask = (uint)1 << move;
+            } while (move == -1 || (checkedMoves & moveMask) == moveMask);
+
+            checkedMoves |= moveMask;
+
+            return move;
+        }
+
+        private void PrintMoveStatistics(double[] runtimes, Grid grid, int score,
+            int[] scores, int[] scoreTypes)
         {
             Debug.Assert(scores.Length == scoreTypes.Length);
 
@@ -601,7 +599,7 @@ namespace Connect4
                 log.WriteLine("   Move score is {0}.", score);
             }
 
-            log.WriteLine("   Move is {0:N0}.", move);
+            log.WriteLine("   Move is {0:N0}.", finalMove);
 
             // Print the runtime of each iteration.
             log.WriteLine();
