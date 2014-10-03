@@ -244,25 +244,48 @@ namespace Connect4
                 }
             }
 
-            // If the opponent can win with this move, then the current player
-            // must play that move instead.
+            // If the opponent could win in one move on this position, then the
+            // current player must play that move instead.
+            int forcedMove = -1;
             for (int move = 0; move < state.Width; move++)
             {
                 if (state.IsValidMove(move)
                     && state.LazyIsGameOverOnMove(1 - currentPlayer, move))
                 {
-                    state.Move(move, currentPlayer);
-                    childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -beta, -alpha);
-                    state.UndoMove(move, currentPlayer);
-
                     if (currentDepth == moveNumber)
                     {
-                        finalMove = move;
+                        finalMove = forcedMove;
                     }
 
-                    return childScore;
+                    // Remember this move if it is the first forced move, otherwise
+                    // this is a trap so return the loss immediately.
+                    if (forcedMove == -1)
+                    {
+                        forcedMove = move;
+                    }
+                    else
+                    {
+                        return -42 + currentDepth;
+                    }
                 }
+            }
+
+            // Take the single forced move, if any.
+            if (forcedMove != -1)
+            {
+                state.Move(forcedMove, currentPlayer);
+                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -beta, -alpha);
+                state.UndoMove(forcedMove, currentPlayer);
+
+                return childScore;
+            }
+
+            // This must be a draw if there are no forced moves and only two
+            // moves left in the game.
+            if (currentDepth >= maxMoves - 2)
+            {
+                return 0;
             }
 
             // Will be set to the best move of the lookup.
@@ -381,6 +404,7 @@ namespace Connect4
                     alpha = -NegaScout(currentDepth + 1, searchDepth, state,
                         1 - currentPlayer, -beta, -childScore);
 
+                    // TODO: Check this.
                     bestMove = move;
                     flag = NodeTypeExact;
                 }
@@ -393,34 +417,34 @@ namespace Connect4
                     alpha = childScore;
                     flag = NodeTypeExact;
                     bestMove = move;
-                }
 
-                // Check if this a beta cutoff.
-                if (alpha >= beta)
-                {
-                    betaCutoffs++;
-                    if (isFirstChild)
+                    // Check if this a beta cutoff.
+                    if (alpha >= beta)
                     {
-                        betaCutoffsOnFirstChild++;
-                    }
-                    if (index <= 0)
-                    {
-                        betaCutoffsOnOrderedChildren++;
-                    }
+                        betaCutoffs++;
+                        if (isFirstChild)
+                        {
+                            betaCutoffsOnFirstChild++;
+                        }
+                        if (index <= 0)
+                        {
+                            betaCutoffsOnOrderedChildren++;
+                        }
 
-                    // Do not store this move as a killer move if it is already in
-                    // the first slot and both slots are in use (not equal to -1),
-                    // or if it's not in the first slot and the second slot is empty.
-                    if (killerMoves[0] != bestMove ^ killerMoves[1] == -1)
-                    {
-                        killerMoves[1] = killerMoves[0];
-                        killerMoves[0] = bestMove;
+                        // Do not store this move as a killer move if it is already in
+                        // the first slot and both slots are in use (not equal to -1),
+                        // or if it's not in the first slot and the second slot is empty.
+                        if ((killerMoves[0] == bestMove) == (killerMoves[1] == -1))
+                        {
+                            killerMoves[1] = killerMoves[0];
+                            killerMoves[0] = bestMove;
+                        }
+
+                        // This is a cut-node, so the score is a lower bound.
+                        flag = NodeTypeLower;
+
+                        break;
                     }
-
-                    // This is a cut-node, so the score is a lower bound.
-                    flag = NodeTypeLower;
-
-                    break;
                 }
 
                 // Update the null window.
