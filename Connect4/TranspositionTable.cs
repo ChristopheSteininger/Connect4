@@ -8,6 +8,8 @@ namespace Connect4
 {
     class TranspositionTable
     {
+        private ulong[] table = new ulong[TableSize];
+
         // The number of most significant bits of a state's hash to use as
         // the index into the table. Determines the size of the table.
         // 26 gives a 1 GB table. Must at least as big as indexBits.
@@ -19,8 +21,6 @@ namespace Connect4
 
         public const int TableSize = 1 << (hashIndexBits + 1);
         public const long MemorySpaceBytes = sizeof(ulong) * (long)TableSize;
-
-        private ulong[] table = new ulong[TableSize];
 
         private long size = 0;
         public long Size { get { return size; } }

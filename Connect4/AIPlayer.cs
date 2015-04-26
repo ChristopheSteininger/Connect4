@@ -254,7 +254,7 @@ namespace Connect4
                 {
                     if (currentDepth == moveNumber)
                     {
-                        finalMove = forcedMove;
+                        finalMove = move;
                     }
 
                     // Remember this move if it is the first forced move, otherwise
