@@ -15,8 +15,6 @@ namespace Connect4
         // A three dimensional table of arrays of masks, accessed by row, column then count.
         private ulong[][] lazyMasks;
 
-        private int lastMove = -1;
-
         // The flags for which players to update the streak count after a move.
         private bool[] updateLazyStreakCountForPlayer = new bool[] { false, false };
         public bool[] UpdateLazyStreakCountForPlayer
@@ -29,16 +27,6 @@ namespace Connect4
         public int[] StreakCount
         {
             get { return streakCount; }
-        }
-
-        public void ClearMoveHistory()
-        {
-            lastMove = -1;
-        }
-
-        public void SetLastMove(int lastMove)
-        {
-            this.lastMove = lastMove;
         }
 
         /// <summary>
@@ -65,12 +53,11 @@ namespace Connect4
         }
 
         /// <summary>
-        /// Similar to IsGameOver() but only checks one player and if the last move is part
-        /// of the winning streak.
+        /// Similar to IsGameOver() but only checks one player.
         /// </summary>
         /// <param name="player">The player to check</param>
         /// <returns>True if the last move was a winning move for the player.</returns>
-        public bool LazyIsGameOver(int player)
+        public bool IsGameOver(int player)
         {
             ulong playerPosition = playerPositions[player];
 
@@ -100,10 +87,14 @@ namespace Connect4
             return (horiTest & (horiTest >> 2)) != 0;
         }
 
-        public bool LazyIsGameOverOnMove(int player, int move)
+        public bool IsValidGameOverAfterMove(int player, int move)
         {
+            if (nextFreeTile[move] >= height)
+            {
+                return false;
+            }
+
             int row = nextFreeTile[move];
-            ulong[] masks = lazyMasks[row + (move * height) + (width * height)];
             ulong playerPosition = playerPositions[player]
                 | (ulong)1 << (move + row * (width + 1));
 

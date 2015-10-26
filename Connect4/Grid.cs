@@ -33,11 +33,9 @@ namespace Connect4
         private ulong flippedHash = 0;
         public ulong FlippedHash { get { return flippedHash; } }
 
-        // Each ulong represents a player's pieces on the board. The first width
-        // bits represent the bottom row, if the bit is 0, then the player does
-        // not have a piece on that position otherwise the player does have piece
-        // at that position. The next width bits represent the second row and so
-        // on.
+        // Each ulong represents a player's pieces on the board. Each width + 1
+        // bits represent a row from bottom to top. If the bit is 0, then the
+        // player does not have a piece on that position.
         private ulong[] playerPositions;
         public TileState this[int row, int column]
         {
@@ -133,7 +131,7 @@ namespace Connect4
         {
             Debug.Assert(0 <= column && column < width);
 
-            int row = nextFreeTile[column];
+            int row = nextFreeTile[column]++;
             Debug.Assert(row < height);
             Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
@@ -144,9 +142,6 @@ namespace Connect4
 
             // Update the board.
             playerPositions[player] |= (ulong)1 << (column + row * (width + 1));
-            nextFreeTile[column]++;
-
-            lastMove = column;
         }
 
         public void UndoMove(int column, int player)

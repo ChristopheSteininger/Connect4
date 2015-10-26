@@ -16,7 +16,7 @@ namespace Connect4
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
 
         // Search options.
-        private readonly int moveLookAhead = 29;
+        private readonly int moveLookAhead = 31;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
@@ -140,7 +140,6 @@ namespace Connect4
 
                 score = NegaScout(moveNumber, moveNumber + depth, grid, player,
                     -infinity, infinity);
-                grid.ClearMoveHistory();
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
                 totalRuntime += runtimes[depth - 1];
@@ -198,16 +197,6 @@ namespace Connect4
 
             totalNodesSearched++;
 
-            // Check if the previous player won on the last move.
-            if (state.LazyIsGameOver(1 - currentPlayer))
-            {
-                Debug.Assert(currentDepth != moveNumber);
-                endNodesSearched++;
-
-                // Return the score of losing on the last move.
-                return -44 + currentDepth;
-            }
-
             // If there are no valid moves, then this is a draw.
             if (currentDepth >= maxMoves)
             {
@@ -232,8 +221,7 @@ namespace Connect4
             // no more evaluation is needed.
             for (int move = 0; move < state.Width; move++)
             {
-                if (state.IsValidMove(move)
-                    && state.LazyIsGameOverOnMove(currentPlayer, move))
+                if (state.IsValidGameOverAfterMove(currentPlayer, move))
                 {
                     if (currentDepth == moveNumber)
                     {
@@ -249,8 +237,7 @@ namespace Connect4
             int forcedMove = -1;
             for (int move = 0; move < state.Width; move++)
             {
-                if (state.IsValidMove(move)
-                    && state.LazyIsGameOverOnMove(1 - currentPlayer, move))
+                if (state.IsValidGameOverAfterMove(1 - currentPlayer, move))
                 {
                     if (currentDepth == moveNumber)
                     {
@@ -400,7 +387,6 @@ namespace Connect4
                 // is inside the bounds and this is a PV-node.
                 if (alpha < childScore && childScore < beta && !isFirstChild)
                 {
-                    state.SetLastMove(move);
                     alpha = -NegaScout(currentDepth + 1, searchDepth, state,
                         1 - currentPlayer, -beta, -childScore);
 
