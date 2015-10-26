@@ -99,7 +99,7 @@ namespace Connect4
 
         private TileState GetTileState(int row, int column)
         {
-            ulong mask = (ulong)1 << (column + row * width);
+            ulong mask = (ulong)1 << (column + row * (width + 1));
             if ((playerPositions[0] & mask) == mask)
             {
                 return TileState.Player1;
@@ -121,7 +121,7 @@ namespace Connect4
 
         public uint GetInvalidMovesMask()
         {
-            return (uint)((playerPositions[0] | playerPositions[1]) >> (width * (height - 1)));
+            return (uint)((playerPositions[0] | playerPositions[1]) >> ((width + 1) * (height - 1)));
         }
 
         public bool IsValidMove(int column)
@@ -143,7 +143,7 @@ namespace Connect4
                 (player * width * height) + ((width - column - 1) * height) + row];
 
             // Update the board.
-            playerPositions[player] |= (ulong)1 << (column + row * width);
+            playerPositions[player] |= (ulong)1 << (column + row * (width + 1));
             nextFreeTile[column]++;
 
             lastMove = column;
@@ -158,7 +158,7 @@ namespace Connect4
             Debug.Assert(GetTileState(row, column) != TileState.Empty);
 
             // Restore the board.
-            playerPositions[player] &= ~((ulong)1 << (column + row * width));
+            playerPositions[player] &= ~((ulong)1 << (column + row * (width + 1)));
 
             // Restore the hash values.
             hash ^= zobristTable[(player * width * height) + (column * height) + row];

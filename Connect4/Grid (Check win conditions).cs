@@ -72,24 +72,32 @@ namespace Connect4
         /// <returns>True if the last move was a winning move for the player.</returns>
         public bool LazyIsGameOver(int player)
         {
-            if (lastMove == -1)
-            {
-                return false;
-            }
-
-            int row = nextFreeTile[lastMove] - 1;
-            ulong[] masks = lazyMasks[row + (lastMove * height) + (width * height)];
             ulong playerPosition = playerPositions[player];
 
-            for (int i = 0; i < masks.Length; i++)
+            // Check for negative diagonal \ wins.
+            ulong nDiagTest = playerPosition & (playerPosition >> width);
+            if ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
             {
-                if ((playerPosition & masks[i]) == masks[i])
-                {
-                    return true;
-                }
+                return true;
             }
 
-            return false;
+            // Check for positive diagonal / wins.
+            ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
+            if ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
+            {
+                return true;
+            }
+
+            // Check for vertical wins.
+            ulong vertTest = playerPosition & (playerPosition >> (width + 1));
+            if ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
+            {
+                return true;
+            }
+
+            // Check for horizontal wins.
+            ulong horiTest = playerPosition & (playerPosition >> 1);
+            return (horiTest & (horiTest >> 2)) != 0;
         }
 
         public bool LazyIsGameOverOnMove(int player, int move)
@@ -97,17 +105,32 @@ namespace Connect4
             int row = nextFreeTile[move];
             ulong[] masks = lazyMasks[row + (move * height) + (width * height)];
             ulong playerPosition = playerPositions[player]
-                | (ulong)1 << (move + row * width);
+                | (ulong)1 << (move + row * (width + 1));
 
-            for (int i = 0; i < masks.Length; i++)
+            // Check for negative diagonal \ wins.
+            ulong nDiagTest = playerPosition & (playerPosition >> width);
+            if ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
             {
-                if ((playerPosition & masks[i]) == masks[i])
-                {
-                    return true;
-                }
+                return true;
             }
 
-            return false;
+            // Check for positive diagonal / wins.
+            ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
+            if ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
+            {
+                return true;
+            }
+
+            // Check for vertical wins.
+            ulong vertTest = playerPosition & (playerPosition >> (width + 1));
+            if ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
+            {
+                return true;
+            }
+
+            // Check for horizontal wins.
+            ulong horiTest = playerPosition & (playerPosition >> 1);
+            return (horiTest & (horiTest >> 2)) != 0;
         }
 
         public int Evaluate(int player)
@@ -395,7 +418,7 @@ namespace Connect4
             {
                 for (int x = 0; x < width; x++)
                 {
-                    //tempMasks.Add(verticalMask);
+                    tempMasks.Add(verticalMask);
                     tempLazyMasks[length - 3, y + length - 1, x].Add(verticalMask);
 
                     verticalMask <<= 1;
