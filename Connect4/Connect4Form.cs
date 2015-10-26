@@ -65,6 +65,11 @@ namespace Connect4
             DrawBoard();
         }
 
+        private void btnReplay_Click(object sender, System.EventArgs e)
+        {
+            board.StartReplay("..\\Logs\\All Logs\\Log 2015-10-10 12-52-39 la=29.txt");
+        }
+
         public void DrawBoard()
         {
             Graphics graphics = plBoard.CreateGraphics();

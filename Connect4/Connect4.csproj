@@ -69,6 +69,7 @@
     <Compile Include="Player.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReplayPlayer.cs" />
     <Compile Include="TranspositionTable.cs" />
     <EmbeddedResource Include="Connect4Form.resx">
       <DependentUpon>Connect4Form.cs</DependentUpon>

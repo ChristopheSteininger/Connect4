@@ -25,6 +25,9 @@ namespace Connect4
             get { return grid[row, column]; }
         }
 
+        public int Width { get { return grid.Width; } }
+        public int Height { get { return grid.Height; } }
+
         public int HighlightedColumn
         {
             get { return highlightedColumn; }
@@ -52,6 +55,12 @@ namespace Connect4
         public void OnStart()
         {
             players[currentPlayer].BeginMove(grid.Clone());
+        }
+
+        public void StartReplay(string log)
+        {
+            players[currentPlayer] = new ReplayPlayer(currentPlayer, this, log);
+            StartNextMove();
         }
 
         public void OnClick()
@@ -85,14 +94,21 @@ namespace Connect4
             highlightedColumn = -1;
 
             winner = grid.IsGameOver();
+            drawer.DrawBoard();
+
             if (winner != -1)
             {
                 players[0].GameOver(winner == 0);
                 players[1].GameOver(winner == 1);
             }
+            else
+            {
+                StartNextMove();
+            }
+        }
 
-            drawer.DrawBoard();
-
+        private void StartNextMove()
+        {
             players[currentPlayer].BeginMove(grid.Clone());
         }
     }
