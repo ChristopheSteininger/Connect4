@@ -1,6 +1,7 @@
 ﻿using Connect4;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 
 namespace Connect4Test
 {
@@ -758,6 +759,52 @@ namespace Connect4Test
             }
         }
 
+        [TestMethod()]
+        public void Perft()
+        {
+            Grid grid = new Grid(7, 6, 0);
+
+            const int maxDepth = 10;
+
+            int[] results = new int[maxDepth];
+            int[] expected = new int[] { 1, 7, 49, 238, 1120, 4263, 16422,
+            54859, 184275, 558186, 1662623, 4568683 };
+
+            HashSet<ulong> visitedStates = new HashSet<ulong>();
+
+            PerftHelper(grid, 0, maxDepth, results, visitedStates);
+
+            for (int i = 0; i < maxDepth; i++)
+            {
+                Assert.AreEqual(expected[i], results[i]);
+            }
+        }
+
+        private void PerftHelper(Grid grid, int depth, int maxDepth, int[] results,
+            HashSet<ulong> visitedStates)
+        {
+            int player = depth & 1;
+
+            if (depth >= maxDepth || grid.IsGameOver(player)
+                || visitedStates.Contains(grid.Hash))
+            {
+                return;
+            }
+
+            results[depth]++;
+            visitedStates.Add(grid.Hash);
+
+            for (int i = 0; i < grid.Width; i++)
+            {
+                if (grid.IsValidMove(i))
+                {
+                    grid.Move(i, player);
+                    PerftHelper(grid, depth + 1, maxDepth, results, visitedStates);
+                    grid.UndoMove(i, player);
+                }
+            }
+        }
+
         private void AssertArraysEqual(int[] expected, int[] actual)
         {
             Assert.AreEqual(expected.Length, actual.Length);
@@ -766,6 +813,149 @@ namespace Connect4Test
             {
                 Assert.AreEqual(expected[i], actual[i]);
             }
+        }
+
+        /// <summary>
+        ///A test for GetThreats
+        ///</summary>
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void GetThreatsReturns0OnEmptyBoard()
+        {
+            Grid_Accessor grid = new Grid_Accessor(new PrivateObject(new Grid(7, 6, 0)));
+
+            ValidateThreats(grid, 0);
+            ValidateThreats(grid, 1);
+        }
+
+        /// <summary>
+        ///A test for GetThreats
+        ///</summary>
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void GetThreatsFindsSimpleHorizontalThreat()
+        {
+            Grid_Accessor grid = new Grid_Accessor(new PrivateObject(new Grid(7, 6, 0)));
+
+            grid.Move(1, 0);
+            grid.Move(1, 1);
+            grid.Move(2, 0);
+            grid.Move(2, 1);
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+
+            ValidateThreats(grid, 0);
+            ValidateThreats(grid, 1);
+        }
+
+        /// <summary>
+        ///A test for GetThreats
+        ///</summary>
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void GetThreatsIgnoresBlockedHorizontalThreats()
+        {
+            Grid_Accessor grid = new Grid_Accessor(new PrivateObject(new Grid(7, 6, 0)));
+
+            grid.Move(1, 0);
+            grid.Move(1, 1);
+            grid.Move(2, 0);
+            grid.Move(2, 1);
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+            grid.Move(6, 0);
+            grid.Move(0, 1);
+            grid.Move(0, 0);
+
+            ValidateThreats(grid, 0);
+            ValidateThreats(grid, 1);
+        }
+
+        /// <summary>
+        ///A test for GetThreats
+        ///</summary>
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void GetThreatsIgnoresBlockedByEdge()
+        {
+            Grid_Accessor grid = new Grid_Accessor(new PrivateObject(new Grid(7, 6, 0)));
+
+            grid.Move(6, 0);
+            grid.Move(6, 1);
+            grid.Move(5, 0);
+            grid.Move(5, 1);
+            grid.Move(4, 0);
+            grid.Move(4, 1);
+
+            ValidateThreats(grid, 0);
+            ValidateThreats(grid, 1);
+        }
+
+        /// <summary>
+        ///A test for GetThreats
+        ///</summary>
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void GetThreatsFuzzTest()
+        {
+            Random random = new Random(0);
+
+            const int gameLimit = 200;
+
+            for (int game = 1; game < gameLimit; game++)
+            {
+                Grid_Accessor grid = new Grid_Accessor(new PrivateObject(new Grid(7, 6, 0)));
+
+                // Play a full random, game, and verify threats after each move.
+                for (int i = 0; i < 7 * 6 && grid.IsGameOver() == -1; i++)
+                {
+                    ValidateThreats(grid, 0);
+                    ValidateThreats(grid, 1);
+
+                    int move;
+                    do
+                    {
+                        move = random.Next(grid.Width);
+                    } while (!grid.IsValidMove(move));
+
+                    int player = i & 1;
+                    grid.Move(move, player);
+                }
+            }
+        }
+
+        private void ValidateThreats(Grid_Accessor grid, int player)
+        {
+            ulong threats = grid.GetThreats(player);
+
+            for (int i = 0; i < grid.Height * (grid.Width + 1); i++)
+            {
+                ulong mask = 1UL << i;
+                bool isThreat = (threats & mask) == mask;
+                bool isInBuffer = ((i + 1) % (grid.Width + 1)) == 0;
+
+                if (isThreat)
+                {
+                    Assert.AreEqual(0UL, grid.playerPositions[0] & mask,
+                        "Player cannot have a threat in a nonempty location");
+                    Assert.AreEqual(0UL, grid.playerPositions[1] & mask,
+                        "Player cannot have a threat in a nonempty location");
+
+                    Assert.IsTrue(!isInBuffer,
+                        "Cannot have a threat in the column buffer");
+                }
+
+                if (!isInBuffer)
+                {
+                    ulong originalPosition = grid.playerPositions[player];
+                    grid.playerPositions[player] |= mask & ~grid.playerPositions[1 - player];
+                    Assert.AreEqual(isThreat, grid.IsGameOver(player));
+                    grid.playerPositions[player] = originalPosition;
+                }
+            }
+
+            Assert.AreEqual(0UL, threats >> (grid.Height * (grid.Width + 1)),
+                "Threats must be on the board");
         }
     }
 }
