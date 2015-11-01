@@ -15,7 +15,7 @@
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
@@ -63,6 +63,7 @@
     </Compile>
     <Compile Include="Game1.cs" />
     <Compile Include="Grid %28Check win conditions%29.cs" />
+    <Compile Include="Grid %28Threat Eval%29.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="HumanPlayer.cs" />
     <Compile Include="IBoardDrawer.cs" />

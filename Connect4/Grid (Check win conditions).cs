@@ -36,20 +36,9 @@ namespace Connect4
         /// won.</returns>
         public int IsGameOver()
         {
-            // Each mask is a possible way to win a game. If a mask is in a player's position
-            // array, then the player has won.
-            for (int player = 0; player < 2; player++)
-            {
-                for (int i = 0; i < streakMasks[1].Length; i++)
-                {
-                    if ((playerPositions[player] & streakMasks[1][i]) == streakMasks[1][i])
-                    {
-                        return player;
-                    }
-                }
-            }
-
-            return -1;
+            return IsGameOver(0)
+                ? 0
+                : (IsGameOver(1) ? 1 : -1);
         }
 
         /// <summary>
@@ -61,30 +50,15 @@ namespace Connect4
         {
             ulong playerPosition = playerPositions[player];
 
-            // Check for negative diagonal \ wins.
             ulong nDiagTest = playerPosition & (playerPosition >> width);
-            if ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
-            {
-                return true;
-            }
-
-            // Check for positive diagonal / wins.
             ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
-            if ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
-            {
-                return true;
-            }
-
-            // Check for vertical wins.
             ulong vertTest = playerPosition & (playerPosition >> (width + 1));
-            if ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
-            {
-                return true;
-            }
-
-            // Check for horizontal wins.
             ulong horiTest = playerPosition & (playerPosition >> 1);
-            return (horiTest & (horiTest >> 2)) != 0;
+
+            return ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
+                || ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
+                || ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
+                || ((horiTest & (horiTest >> 2)) != 0);
         }
 
         public bool IsValidGameOverAfterMove(int player, int move)
@@ -98,30 +72,47 @@ namespace Connect4
             ulong playerPosition = playerPositions[player]
                 | (ulong)1 << (move + row * (width + 1));
 
-            // Check for negative diagonal \ wins.
             ulong nDiagTest = playerPosition & (playerPosition >> width);
-            if ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
-            {
-                return true;
-            }
-
-            // Check for positive diagonal / wins.
             ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
-            if ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
-            {
-                return true;
-            }
-
-            // Check for vertical wins.
             ulong vertTest = playerPosition & (playerPosition >> (width + 1));
-            if ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
-            {
-                return true;
-            }
-
-            // Check for horizontal wins.
             ulong horiTest = playerPosition & (playerPosition >> 1);
-            return (horiTest & (horiTest >> 2)) != 0;
+
+            return ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
+                || ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
+                || ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
+                || ((horiTest & (horiTest >> 2)) != 0);
+        }
+
+        private void UpdateThreats2(int player)
+        {
+            ulong playerPosition = playerPositions[player];
+            ulong opponentPosition = playerPositions[1 - player];
+
+            ulong horiTest = playerPosition & (playerPosition >> 1);
+            ulong triplePositions = horiTest & (horiTest >> 1);
+
+            for (int index = 0; triplePositions != 0; index++)
+            {
+                // TODO: There is a fast method to get the next set bit.
+                if ((triplePositions & 1) == 1)
+                {
+                    ulong leftMask = 1UL << (index - 3);
+                    ulong rightMask = 1UL << (index + 1);
+
+                    // If the missing piece of the threat is not blocked by the edge
+                    // or the opponent.
+                    if ((opponentPosition & leftMask) == 0 && (index - 2) % 8 != 0)
+                    {
+
+                    }
+
+                    if ((opponentPosition & rightMask) == 0 && (index + 1) % 7 != 0)
+                    {
+                    }
+                }
+
+                triplePositions >>= 1;
+            }
         }
 
         public int Evaluate(int player)
@@ -365,8 +356,8 @@ namespace Connect4
                     positiveDiagonalMask <<= 1;
                 }
 
-                negativeDiagonalMask <<= length - 1;
-                positiveDiagonalMask <<= length - 1;
+                negativeDiagonalMask <<= length;
+                positiveDiagonalMask <<= length;
             }
         }
 
@@ -389,7 +380,7 @@ namespace Connect4
                     horizontalMask <<= 1;
                 }
 
-                horizontalMask <<= length - 1;
+                horizontalMask <<= length;
             }
         }
 
@@ -414,6 +405,8 @@ namespace Connect4
 
                     verticalMask <<= 1;
                 }
+
+                verticalMask <<= 1;
             }
         }
     }

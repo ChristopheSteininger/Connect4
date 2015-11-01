@@ -42,6 +42,13 @@ namespace Connect4
             get { return GetTileState(row, column); }
         }
 
+        private string AA1 { get { return PrintRow(5); } }
+        private string AA2 { get { return PrintRow(4); } }
+        private string AA3 { get { return PrintRow(3); } }
+        private string AA4 { get { return PrintRow(2); } }
+        private string AA5 { get { return PrintRow(1); } }
+        private string AA6 { get { return PrintRow(0); } }
+
         public Grid(int width, int height, int seed)
         {
             Debug.Assert(width > 4);
@@ -60,6 +67,9 @@ namespace Connect4
             }
 
             this.seed = seed;
+
+            threats[0] = new int[width];
+            threats[1] = new int[width];
 
             SetStreakMasks();
             InitialiseZobristTable();
@@ -167,30 +177,36 @@ namespace Connect4
 
             for (int row = height - 1; row >= 0; row--)
             {
-                result += "|";
-                for (int column = 0; column < width; column++)
-                {
-                    switch (GetTileState(row, column))
-                    {
-                        case TileState.Empty:
-                            result += "\u00B7";
-                            break;
-
-                        case TileState.Player1:
-                            result += "\u25CB";
-                            break;
-
-                        case TileState.Player2:
-                            result += "\u25CF";
-                            break;
-                    }
-                }
-
-                result += "|" + Environment.NewLine;
+                result += "|" + PrintRow(row) + "|" + Environment.NewLine;
             }
 
             string horizontalBorder = "+" + new string('-', width) + "+";
             return horizontalBorder + Environment.NewLine + result + horizontalBorder;
+        }
+
+        private string PrintRow(int row)
+        {
+            string result = "";
+
+            for (int column = 0; column < width; column++)
+            {
+                switch (GetTileState(row, column))
+                {
+                    case TileState.Empty:
+                        result += "\u00B7";
+                        break;
+
+                    case TileState.Player1:
+                        result += "\u25CB";
+                        break;
+
+                    case TileState.Player2:
+                        result += "\u25CF";
+                        break;
+                }
+            }
+
+            return result;
         }
 
         public override int GetHashCode()
