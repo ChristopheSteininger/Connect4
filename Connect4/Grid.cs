@@ -68,10 +68,6 @@ namespace Connect4
 
             this.seed = seed;
 
-            threats[0] = new int[width];
-            threats[1] = new int[width];
-
-            SetStreakMasks();
             InitialiseZobristTable();
         }
 

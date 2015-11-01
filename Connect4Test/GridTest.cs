@@ -718,21 +718,6 @@ namespace Connect4Test
         }
 
         /// <summary>
-        ///A test for GetPlayerStreaks
-        ///</summary>
-        [TestMethod()]
-        public void GetPlayerStreaksTest()
-        {
-            Grid grid = new Grid(width, height, seed);
-            grid.Move(0, 0);
-            Assert.AreEqual(0, grid.GetPlayerStreaks(0));
-            grid.Move(1, 0);
-            Assert.AreEqual(0, grid.GetPlayerStreaks(0));
-            grid.Move(2, 0);
-            Assert.AreEqual(1, grid.GetPlayerStreaks(0));
-        }
-
-        /// <summary>
         ///A test for UndoMove
         ///</summary>
         [TestMethod()]
