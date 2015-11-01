@@ -51,7 +51,7 @@ namespace Connect4
             return 0;
         }
 
-        private ulong GetThreats(int player)
+        public ulong GetThreats(int player)
         {
             ulong playerPosition = playerPositions[player];
 

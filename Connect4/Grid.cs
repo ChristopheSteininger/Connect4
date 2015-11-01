@@ -128,6 +128,12 @@ namespace Connect4
             return (uint)((playerPositions[0] | playerPositions[1]) >> ((width + 1) * (height - 1)));
         }
 
+        public ulong GetValidMovesMask()
+        {
+            return ((playerPositions[0] | playerPositions[1]) << (width + 1))
+                | ((1UL << width) - 1);
+        }
+
         public bool IsValidMove(int column)
         {
             return 0 <= column && column < width && nextFreeTile[column] < height;

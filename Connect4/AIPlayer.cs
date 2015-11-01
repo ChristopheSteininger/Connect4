@@ -215,53 +215,48 @@ namespace Connect4
                 return 0;
             }
 
-            int childScore;
+            ulong validMovesMask = state.GetValidMovesMask();
+            ulong playerThreats = state.GetThreats(currentPlayer);
 
             // If the player can win on this move then return immediately,
             // no more evaluation is needed.
-            for (int move = 0; move < state.Width; move++)
+            ulong currentPlayerThreats = validMovesMask & playerThreats;
+            if (currentPlayerThreats != 0)
             {
-                if (state.IsValidGameOverAfterMove(currentPlayer, move))
+                if (currentDepth == moveNumber)
                 {
-                    if (currentDepth == moveNumber)
-                    {
-                        finalMove = move;
-                    }
-
-                    return 43 - currentDepth;
+                    finalMove = GetFirstColumnOfThreatBoard(currentPlayerThreats);
                 }
+
+                return 43 - currentDepth;
             }
+
+            ulong opponentThreats = state.GetThreats(1 - currentPlayer);
 
             // If the opponent could win in one move on this position, then the
             // current player must play that move instead.
-            int forcedMove = -1;
-            for (int move = 0; move < state.Width; move++)
+            ulong currentOpponentThreats = validMovesMask & opponentThreats;
+            if (currentOpponentThreats != 0)
             {
-                if (state.IsValidGameOverAfterMove(1 - currentPlayer, move))
+                int forcedMove = GetFirstColumnOfThreatBoard(currentOpponentThreats);
+
+                if (currentDepth == moveNumber)
                 {
-                    if (currentDepth == moveNumber)
-                    {
-                        finalMove = move;
-                    }
-
-                    // Remember this move if it is the first forced move, otherwise
-                    // this is a trap so return the loss immediately.
-                    if (forcedMove == -1)
-                    {
-                        forcedMove = move;
-                    }
-                    else
-                    {
-                        return -42 + currentDepth;
-                    }
+                    finalMove = forcedMove;
                 }
-            }
 
-            // Take the single forced move, if any.
-            if (forcedMove != -1)
-            {
+                currentOpponentThreats &= ~(0x010101010101UL << forcedMove);
+
+                // If there is another threat return the loss immediately, otherwise
+                // play the forced move.
+                if (currentOpponentThreats != 0)
+                {
+                    return -42 + currentDepth;
+                }
+
+                // Take the single forced move.
                 state.Move(forcedMove, currentPlayer);
-                childScore = -Negamax(currentDepth + 1, searchDepth, state,
+                int childScore = -Negamax(currentDepth + 1, searchDepth, state,
                     1 - currentPlayer, -beta, -alpha);
                 state.UndoMove(forcedMove, currentPlayer);
 
@@ -377,7 +372,7 @@ namespace Connect4
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
 
-                childScore = -Negamax(currentDepth + 1, searchDepth, state,
+                int childScore = -Negamax(currentDepth + 1, searchDepth, state,
                     1 - currentPlayer, -beta, -alpha);
 
                 state.UndoMove(move, currentPlayer);
@@ -462,6 +457,18 @@ namespace Connect4
             }
 
             return score;
+        }
+
+        private int GetFirstColumnOfThreatBoard(ulong threatBoard)
+        {
+            return((threatBoard & 0x010101010101) != 0) ? 0
+                : ((threatBoard & 0x020202020202) != 0) ? 1
+                : ((threatBoard & 0x040404040404) != 0) ? 2
+                : ((threatBoard & 0x080808080808) != 0) ? 3
+                : ((threatBoard & 0x101010101010) != 0) ? 4
+                : ((threatBoard & 0x202020202020) != 0) ? 5
+                : ((threatBoard & 0x404040404040) != 0) ? 6
+                : -1;
         }
 
         private int GetNextMove(ref int i, ref uint checkedMoves, int shallowLookup,
