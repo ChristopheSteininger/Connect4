@@ -138,7 +138,7 @@ namespace Connect4
 
                 DateTime startTime = DateTime.Now;
 
-                score = NegaScout(moveNumber, moveNumber + depth, grid, player,
+                score = Negamax(moveNumber, moveNumber + depth, grid, player,
                     -infinity, infinity);
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
@@ -190,7 +190,7 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int NegaScout(int currentDepth, int searchDepth, Grid state, int currentPlayer,
+        private int Negamax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
             int alpha, int beta)
         {
             Debug.Assert(currentDepth <= searchDepth);
@@ -261,7 +261,7 @@ namespace Connect4
             if (forcedMove != -1)
             {
                 state.Move(forcedMove, currentPlayer);
-                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
+                childScore = -Negamax(currentDepth + 1, searchDepth, state,
                     1 - currentPlayer, -beta, -alpha);
                 state.UndoMove(forcedMove, currentPlayer);
 
@@ -356,13 +356,10 @@ namespace Connect4
             // moves.
             uint allMovesChecked = ((uint)1 << state.Width) - 1;
 
-            // Assume that this is an all-node and therefore the score is an
-            // upper bound on the true score until proven otherwise.
-            int flag = NodeTypeUpper;
+            int score = int.MinValue;
+            int originalAlpha = alpha;
 
-            int betaScout = beta;
             int bestMove = -1;
-            int movesSearched = 0;
             int index = -(1 + killerMovesEntrySize);
             bool isFirstChild = true;
 
@@ -380,91 +377,91 @@ namespace Connect4
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
 
-                childScore = -NegaScout(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -betaScout, -alpha);
-
-                // Rerun the search with a wider window if the returned score
-                // is inside the bounds and this is a PV-node.
-                if (alpha < childScore && childScore < beta && !isFirstChild)
-                {
-                    alpha = -NegaScout(currentDepth + 1, searchDepth, state,
-                        1 - currentPlayer, -beta, -childScore);
-
-                    // TODO: Check this.
-                    bestMove = move;
-                    flag = NodeTypeExact;
-                }
+                childScore = -Negamax(currentDepth + 1, searchDepth, state,
+                    1 - currentPlayer, -beta, -alpha);
 
                 state.UndoMove(move, currentPlayer);
 
-                // Check if this is a PV-node and the lower bound can be improved.
-                if (childScore > alpha)
+                if (childScore > score)
                 {
-                    alpha = childScore;
-                    flag = NodeTypeExact;
-                    bestMove = move;
-
-                    // Check if this a beta cutoff.
-                    if (alpha >= beta)
+                    score = childScore;
+                    if (score > alpha)
                     {
-                        betaCutoffs++;
-                        if (isFirstChild)
+                        alpha = childScore;
+                        // Check if this a cutoff.
+                        if (alpha >= beta)
                         {
-                            betaCutoffsOnFirstChild++;
-                        }
-                        if (index <= 0)
-                        {
-                            betaCutoffsOnOrderedChildren++;
-                        }
+                            betaCutoffs++;
+                            if (isFirstChild)
+                            {
+                                betaCutoffsOnFirstChild++;
+                            }
+                            if (index <= 0)
+                            {
+                                betaCutoffsOnOrderedChildren++;
+                            }
 
-                        // Do not store this move as a killer move if it is already in
-                        // the first slot and both slots are in use (not equal to -1),
-                        // or if it's not in the first slot and the second slot is empty.
-                        if ((killerMoves[0] == bestMove) == (killerMoves[1] == -1))
-                        {
-                            killerMoves[1] = killerMoves[0];
-                            killerMoves[0] = bestMove;
+                            // Do not store this move as a killer move if it is already in
+                            // the first slot and both slots are in use (not equal to -1),
+                            // or if it's not in the first slot and the second slot is empty.
+                            if ((killerMoves[0] == bestMove) == (killerMoves[1] == -1))
+                            {
+                                killerMoves[1] = killerMoves[0];
+                                killerMoves[0] = bestMove;
+                            }
+
+                            break;
                         }
-
-                        // This is a cut-node, so the score is a lower bound.
-                        flag = NodeTypeLower;
-
-                        break;
                     }
                 }
 
-                // Update the null window.
-                betaScout = alpha + 1;
-
                 isFirstChild = false;
-                movesSearched++;
             }
 
             Debug.Assert(bestMove != -1);
 
-            // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, alpha, flag);
-
-            // Update node type counter.
-            switch (flag)
+            // Determine the type of node, so the score can be used correct
+            // after a lookup.
+            int flag;
+            if (score <= originalAlpha)
             {
-                case NodeTypeExact:
-                    pvNodes++;
-                    break;
-                case NodeTypeLower:
-                    cutNodes++;
-                    break;
-                case NodeTypeUpper:
-                    allNodes++;
-                    break;
+                flag = NodeTypeUpper;
+                allNodes++;
             }
+            else if (score >= beta)
+            {
+                flag = NodeTypeLower;
+                cutNodes++;
+            }
+            else
+            {
+                flag = NodeTypeExact;
+                pvNodes++;
+            }
+
+            // Store the score in the t-table in case the same state is reached later.
+            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
+
+            //if (currentPlayer == 0 && guess != 0 && searchDepth == maxMoves
+            //    && flag != NodeTypeLower)
+            //{
+            //    if (score >= 0)
+            //    {
+            //        correctGuesses++;
+            //    }
+            //    else
+            //    {
+            //        incorrectGuesses++;
+            //    }
+            //    guess = -1;
+            //}
 
             if (currentDepth == moveNumber)
             {
                 finalMove = bestMove;
             }
 
-            return alpha;
+            return score;
         }
 
         private int GetNextMove(ref int i, ref uint checkedMoves, int shallowLookup,
