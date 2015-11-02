@@ -54,7 +54,16 @@ namespace Connect4
 #endif
             WriteLine("Player {0} with {1} move look ahead.", player, moveLookAhead);
             WriteLine("Seed is {0}", seed);
+            Write(Get32BitWarning());
+
             WriteLine();
+        }
+
+        private string Get32BitWarning()
+        {
+            return (Environment.Is64BitProcess)
+                ? ""
+                : "Warning! Running in 32 bit mode. Search will take longer." + Environment.NewLine;
         }
 
         private void CreateFolders()
