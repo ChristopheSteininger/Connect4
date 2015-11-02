@@ -138,8 +138,7 @@ namespace Connect4
 
                 DateTime startTime = DateTime.Now;
 
-                score = Negamax(moveNumber, moveNumber + depth, grid, player,
-                    -infinity, infinity);
+                score = Negamax(moveNumber, moveNumber + depth, grid, -infinity, infinity);
 
                 runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
                 totalRuntime += runtimes[depth - 1];
@@ -190,10 +189,13 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int Negamax(int currentDepth, int searchDepth, Grid state, int currentPlayer,
+        private int Negamax(int currentDepth, int searchDepth, Grid state,
             int alpha, int beta)
         {
             Debug.Assert(currentDepth <= searchDepth);
+
+            int currentPlayer = currentDepth & 1;
+            int originalAlpha = alpha;
 
             totalNodesSearched++;
 
@@ -228,7 +230,7 @@ namespace Connect4
                     finalMove = GetFirstColumnOfThreatBoard(currentPlayerThreats);
                 }
 
-                return 43 - currentDepth;
+                return infinity - currentDepth;
             }
 
             ulong opponentThreats = state.GetThreats(1 - currentPlayer);
@@ -245,19 +247,19 @@ namespace Connect4
                     finalMove = forcedMove;
                 }
 
+                // Remove the forced move from the threat board.
                 currentOpponentThreats &= ~(0x010101010101UL << forcedMove);
 
                 // If there is another threat return the loss immediately, otherwise
                 // play the forced move.
                 if (currentOpponentThreats != 0)
                 {
-                    return -42 + currentDepth;
+                    return -infinity + currentDepth + 1;
                 }
 
                 // Take the single forced move.
                 state.Move(forcedMove, currentPlayer);
-                int childScore = -Negamax(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -beta, -alpha);
+                int childScore = -Negamax(currentDepth + 1, searchDepth, state, -beta, -alpha);
                 state.UndoMove(forcedMove, currentPlayer);
 
                 return childScore;
@@ -352,7 +354,6 @@ namespace Connect4
             uint allMovesChecked = ((uint)1 << state.Width) - 1;
 
             int score = int.MinValue;
-            int originalAlpha = alpha;
 
             int bestMove = -1;
             int index = -(1 + killerMovesEntrySize);
@@ -371,10 +372,7 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-
-                int childScore = -Negamax(currentDepth + 1, searchDepth, state,
-                    1 - currentPlayer, -beta, -alpha);
-
+                int childScore = -Negamax(currentDepth + 1, searchDepth, state, -beta, -alpha);
                 state.UndoMove(move, currentPlayer);
 
                 if (childScore > score)
@@ -382,7 +380,7 @@ namespace Connect4
                     score = childScore;
                     if (score > alpha)
                     {
-                        alpha = childScore;
+                        alpha = score;
                         // Check if this a cutoff.
                         if (alpha >= beta)
                         {
@@ -415,7 +413,7 @@ namespace Connect4
 
             Debug.Assert(bestMove != -1);
 
-            // Determine the type of node, so the score can be used correct
+            // Determine the type of node, so the score can be used correctly
             // after a lookup.
             int flag;
             if (score <= originalAlpha)
@@ -601,12 +599,12 @@ namespace Connect4
             if (score > 0)
             {
                 WriteLineWithColor("   AI will win latest on move {0}.",
-                    ConsoleColor.Green, 43 - score);
+                    ConsoleColor.Green, infinity - score);
             }
             else if (score < 0)
             {
                 WriteLineWithColor("   AI will lose on move {0} (assuming perfect play).",
-                    ConsoleColor.Red, 43 + score);
+                    ConsoleColor.Red, infinity + score);
             }
             else
             {
