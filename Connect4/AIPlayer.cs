@@ -113,43 +113,28 @@ namespace Connect4
             betaCutoffsOnFirstChild = 0;
             betaCutoffsOnOrderedChildren = 0;
 
-            // Calculate the depth of this search.
-            int maxDepth = Math.Min(moveLookAhead, maxMoves - moveNumber);
-
-            // The runtime of each iteration in milliseconds.
-            double[] runtimes = new double[maxDepth];
-
             int score = -1;
 
-            // Get the best move and measure the runtime.
-            for (int depth = 1; depth <= maxDepth; depth++)
-            {
-                // The branching factor is too small after move 23 to continue using
-                // iterative deepening.
-                if (moveNumber + depth >= 23)
-                {
-                    depth = maxDepth;
-                }
+            int searchDepth = Math.Min(moveNumber + moveLookAhead, maxMoves);
 
-                // Print the start time of this iteration.
-                string updateText = String.Format(
-                    "(Current look ahead is {0}, began at {1})", depth, DateTime.Now.TimeOfDay);
-                Console.Write(updateText);
+            // Print the start time of this iteration.
+            string updateText = String.Format(
+                "(Look ahead is {0}, began at {1})", moveLookAhead, DateTime.Now.TimeOfDay);
+            Console.Write(updateText);
 
-                DateTime startTime = DateTime.Now;
+            DateTime startTime = DateTime.Now;
 
-                score = Negamax(moveNumber, moveNumber + depth, grid, -infinity, infinity);
+            score = Negamax(moveNumber, searchDepth, grid, -infinity, infinity);
 
-                runtimes[depth - 1] = (DateTime.Now - startTime).TotalMilliseconds;
-                totalRuntime += runtimes[depth - 1];
+            double runtime = (DateTime.Now - startTime).TotalMilliseconds;
+            totalRuntime += runtime;
 
-                // Clear the iteration start time text.
-                Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
-                    Console.CursorTop);
-                Console.Write(new String(' ', updateText.Length));
-                Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
-                    Console.CursorTop);
-            }
+            // Clear the start time text.
+            Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
+                Console.CursorTop);
+            Console.Write(new String(' ', updateText.Length));
+            Console.SetCursorPosition(Console.CursorLeft - updateText.Length,
+                Console.CursorTop);
 
             // Retrieve the score of each move.
             int[] scores = new int[grid.Width];
@@ -176,7 +161,7 @@ namespace Connect4
                 }
             }
 
-            PrintMoveStatistics(runtimes, grid, score, scores, scoreTypes);
+            PrintMoveStatistics(runtime, grid, score, scores, scoreTypes);
 
             moveNumber += 2;
 
@@ -497,19 +482,12 @@ namespace Connect4
             return move;
         }
 
-        private void PrintMoveStatistics(double[] runtimes, Grid grid, int score,
+        private void PrintMoveStatistics(double runtime, Grid grid, int score,
             int[] scores, int[] scoreTypes)
         {
             Debug.Assert(scores.Length == scoreTypes.Length);
 
             log.WriteLine("Done");
-
-            // Calculate the total runtime.
-            double runtime = 0;
-            for (int i = 0; i < runtimes.Length; i++)
-            {
-                runtime += runtimes[i];
-            }
 
             // Print the grid before the AI's move to the log file.
             log.WriteLineToLog();
@@ -610,31 +588,6 @@ namespace Connect4
             }
 
             log.WriteLine("   Move is {0:N0}.", finalMove);
-
-            // Print the runtime of each iteration.
-            log.WriteLine();
-            log.WriteLine("Iteration runtimes:");
-
-            for (int i = 0; i < runtimes.Length; i++)
-            {
-                log.Write(" +{0,-2}: {1,11:N2} ms", i + 1, runtimes[i]);
-
-                // Print the percentage of time spent in this iteration.
-                log.Write(", {0,9:N2}%", runtimes[i] * 100 / runtime);
-
-                // Print how much longer this iteration took than the last.
-                if (i > 0)
-                {
-                    double increase = runtimes[i] / runtimes[i - 1];
-                    if (!Double.IsInfinity(increase) && !Double.IsNaN(increase)
-                        && increase > 0.1)
-                    {
-                        log.Write(" (\u00D7 {0:N2})", increase);
-                    }
-                }
-
-                log.WriteLine();
-            }
 
             // Print transposition table statistics.
             log.WriteLine();
