@@ -34,12 +34,12 @@ namespace Connect4
         private long collisions = 0;
         public long Collisions { get { return collisions; } }
 
-        public void Add(int depth, int bestMove, ulong hash, int score,
+        public void Add(int move, int bestMove, ulong hash, int score,
             int nodeType)
         {
             insertions++;
 
-            ulong entry = CreateEntry(depth, bestMove, hash, score, nodeType);
+            ulong entry = CreateEntry(move, bestMove, hash, score, nodeType);
 
             // The index is the hashIndexBits most significant bits and a zero
             // as the least significant bit to distinguish between the always and
@@ -56,7 +56,7 @@ namespace Connect4
                 table[index] = entry;
             }
 
-            else if (GetDepth(currentEntry) < depth)
+            else if (GetMove(currentEntry) < move)
             {
                 collisions++;
                 table[index + 1] = currentEntry;
@@ -134,17 +134,17 @@ namespace Connect4
         }
 
         // Returns a ulong organised as follows:
-        // Field: |-Depth-|-NodeType-|-Score-|-BestMove-|-Hash (bits 0 to 44)-|
-        // Bit:   |0-----5|6--------7|8----15|16------18|19-----------------63|
-        public static ulong CreateEntry(int depth, int bestMove, ulong hash, int score,
+        // Field: |-Move-|-NodeType-|-Score-|-BestMove-|-Hash (bits 0 to 44)-|
+        // Bit:   |0----5|6--------7|8----15|16------18|19-----------------63|
+        public static ulong CreateEntry(int move, int bestMove, ulong hash, int score,
             int nodeType)
         {
-            Debug.Assert((0 <= depth && depth <= 7 * 6) || depth == 63);
+            Debug.Assert((0 <= move && move <= 7 * 6) || move == 63);
             Debug.Assert(0 <= bestMove && bestMove <= 6);
             Debug.Assert(-128 <= score && score <= 127);
             Debug.Assert(1 <= nodeType && nodeType <= 3);
 
-            ulong result = (ulong)depth;
+            ulong result = (ulong)move;
             result |= (ulong)nodeType << 6;
             result |= (ulong)(score + 128) << 8;
             result |= (ulong)bestMove << 16;
@@ -154,7 +154,7 @@ namespace Connect4
             return result;
         }
 
-        public static int GetDepth(ulong data)
+        public static int GetMove(ulong data)
         {
             return (int)(data & 0x3F);
         }

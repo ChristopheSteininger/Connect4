@@ -49,7 +49,19 @@ namespace Connect4
             players[AIPlayer] = new AIPlayer(AIPlayer, this);
             players[humanPlayer] = new HumanPlayer(humanPlayer, this);
 
-            this.grid = new Grid(gridWidth, gridHeight, seed);
+            grid = new Grid(gridWidth, gridHeight, seed);
+
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+            grid.Move(3, 0);
+
+            grid.Move(2, 1);
+            grid.Move(3, 0);
+            grid.Move(2, 1);
+            grid.Move(2, 0);
+            grid.Move(2, 1);
         }
 
         public void OnStart()

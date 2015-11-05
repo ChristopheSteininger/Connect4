@@ -9,22 +9,20 @@ namespace Connect4
     {
         // Search constants.
         private const int infinity = 127;
-        private const int killerMovesEntrySize = 2;
         private const int NodeTypeExact = 1;
         private const int NodeTypeUpper = 2;
         private const int NodeTypeLower = 3;
         private const int maxMoves = 7 * 6; // TODO: Parameterise this?
 
         // Search options.
-        private readonly int moveLookAhead = 31;
+        private readonly int moveLookAhead = 42;
 
         // Move ordering tables.
         private TranspositionTable transpositionTable = new TranspositionTable();
-        private int[][] killerMovesTable;
         private int[] staticMoveOrdering = new int[] { 3, 2, 4, 1, 5, 0, 6 };
 
         // Fields used during search.
-        private int moveNumber = 0;
+        private int moveNumber = 12;
         private int finalMove;
 
         private AILog log;
@@ -60,16 +58,6 @@ namespace Connect4
 
         private void CreateAIPlayer(int seed)
         {
-            killerMovesTable = new int[maxMoves][];
-            for (int i = 0; i < killerMovesTable.Length; i++)
-            {
-                killerMovesTable[i] = new int[killerMovesEntrySize];
-                for (int j = 0; j < killerMovesEntrySize; j++)
-                {
-                    killerMovesTable[i][j] = -1;
-                }
-            }
-
             log = new AILog(player, seed, moveLookAhead, printToConsole);
         }
 
@@ -113,18 +101,14 @@ namespace Connect4
             betaCutoffsOnFirstChild = 0;
             betaCutoffsOnOrderedChildren = 0;
 
-            int score = -1;
-
-            int searchDepth = Math.Min(moveNumber + moveLookAhead, maxMoves);
-
-            // Print the start time of this iteration.
+            // Print the start time of the search.
             string updateText = String.Format(
                 "(Look ahead is {0}, began at {1})", moveLookAhead, DateTime.Now.TimeOfDay);
             Console.Write(updateText);
 
             DateTime startTime = DateTime.Now;
-
-            score = Negamax(moveNumber, searchDepth, grid, -infinity, infinity);
+            
+            int score = Negamax(moveNumber, grid, -infinity, infinity);
 
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             totalRuntime += runtime;
@@ -174,34 +158,13 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int Negamax(int currentDepth, int searchDepth, Grid state,
-            int alpha, int beta)
+        private int Negamax(int currentDepth, Grid state, int alpha, int beta)
         {
-            Debug.Assert(currentDepth <= searchDepth);
-
             int currentPlayer = currentDepth & 1;
             int originalAlpha = alpha;
 
             totalNodesSearched++;
-
-            // If there are no valid moves, then this is a draw.
-            if (currentDepth >= maxMoves)
-            {
-                Debug.Assert(currentDepth != moveNumber);
-                endNodesSearched++;
-
-                return 0;
-            }
-
-            // Evaluate the state if this is a terminal state.
-            if (currentDepth == searchDepth)
-            {
-                Debug.Assert(currentDepth != moveNumber);
-                Debug.Assert(searchDepth != maxMoves);
-
-                return 0;
-            }
-
+            
             ulong validMovesMask = state.GetValidMovesMask();
             ulong playerThreats = state.GetThreats(currentPlayer);
 
@@ -210,6 +173,8 @@ namespace Connect4
             ulong currentPlayerThreats = validMovesMask & playerThreats;
             if (currentPlayerThreats != 0)
             {
+                endNodesSearched++;
+
                 if (currentDepth == moveNumber)
                 {
                     finalMove = GetFirstColumnOfThreatBoard(currentPlayerThreats);
@@ -239,12 +204,13 @@ namespace Connect4
                 // play the forced move.
                 if (currentOpponentThreats != 0)
                 {
+                    endNodesSearched++;
                     return -infinity + currentDepth + 1;
                 }
 
                 // Take the single forced move.
                 state.Move(forcedMove, currentPlayer);
-                int childScore = -Negamax(currentDepth + 1, searchDepth, state, -beta, -alpha);
+                int childScore = -Negamax(currentDepth + 1, state, -beta, -alpha);
                 state.UndoMove(forcedMove, currentPlayer);
 
                 return childScore;
@@ -254,6 +220,7 @@ namespace Connect4
             // moves left in the game.
             if (currentDepth >= maxMoves - 2)
             {
+                endNodesSearched++;
                 return 0;
             }
 
@@ -264,71 +231,54 @@ namespace Connect4
             ulong entry;
             if (transpositionTable.Lookup(state, out entry, out entryBestMove))
             {
-                // The depth is stored in bits 0 to 5 of the entry.
-                int entryDepth = (int)(entry & 0x3F);
+                // If the state has been visited, then return immediately or
+                // improve the alpha and beta values depending on the node type.
+                tableLookups++;
 
-                // If the state has been visited and searched at least as deep
-                // as needed, then return immediately or improve the alpha and
-                // beta values depending on the node type.
-                if (entryDepth >= searchDepth)
+                // The score is stored in bits 8 to 15 of the entry.
+                int entryScore = (int)(((entry >> 8) & 0xFF) - 128);
+
+                // The type is stored in bits 6 to 7 of the entry.
+                int entryType = (int)((entry >> 6) & 0x3);
+
+                switch (entryType)
                 {
-                    tableLookups++;
-
-                    // The score is stored in bits 8 to 15 of the entry.
-                    int entryScore = (int)(((entry >> 8) & 0xFF) - 128);
-
-                    // The type is stored in bits 6 to 7 of the entry.
-                    int entryType = (int)((entry >> 6) & 0x3);
-
-                    switch (entryType)
-                    {
-                        // If the score is exact, there is no need to check anything
-                        // else, so return the score of the entry.
-                        case NodeTypeExact:
-                            if (currentDepth == moveNumber)
-                            {
-                                finalMove = entryBestMove;
-                            }
-                            return entryScore;
-
-                        // If the entry score is an upper bound on the actual score,
-                        // see if the current upper bound can be reduced.
-                        case NodeTypeUpper:
-                            beta = Math.Min(beta, entryScore);
-                            break;
-
-                        // If the entry score is a lower bound on the actual score,
-                        // see if the current lower bound can be increased.
-                        case NodeTypeLower:
-                            alpha = Math.Max(alpha, entryScore);
-                            break;
-                    }
-
-                    // At this point alpha or beta may have been improved, so check if
-                    // this is a cuttoff.
-                    if (beta <= alpha)
-                    {
-                        alphaBetaCutoffs++;
-
+                    // If the score is exact, there is no need to check anything
+                    // else, so return the score of the entry.
+                    case NodeTypeExact:
                         if (currentDepth == moveNumber)
                         {
                             finalMove = entryBestMove;
                         }
-
                         return entryScore;
-                    }
+
+                    // If the entry score is an upper bound on the actual score,
+                    // see if the current upper bound can be reduced.
+                    case NodeTypeUpper:
+                        beta = Math.Min(beta, entryScore);
+                        break;
+
+                    // If the entry score is a lower bound on the actual score,
+                    // see if the current lower bound can be increased.
+                    case NodeTypeLower:
+                        alpha = Math.Max(alpha, entryScore);
+                        break;
                 }
 
-                // If this state has been visited but not searched deep enough,
-                // use the best move the lookup as a clue to which move might be
-                // best.
-                else
+                // At this point alpha or beta may have been improved, so check if
+                // this is a cuttoff.
+                if (beta <= alpha)
                 {
-                    shallowTableLookups++;
+                    alphaBetaCutoffs++;
+
+                    if (currentDepth == moveNumber)
+                    {
+                        finalMove = entryBestMove;
+                    }
+
+                    return entryScore;
                 }
             }
-
-            int[] killerMoves = killerMovesTable[currentDepth];
 
             // A bitmap where a 1 means the corresponding move has already been
             // checked. Initialised with a 1 at all invalid moves.
@@ -337,7 +287,7 @@ namespace Connect4
             int score = int.MinValue;
 
             int bestMove = -1;
-            int index = -(1 + killerMovesEntrySize);
+            int index = 0;
             bool isFirstChild = true;
 
             // Find the best move recursively. A negative index means
@@ -346,8 +296,7 @@ namespace Connect4
             // moves.
             while (checkedMoves != Grid.bottomRow)
             {
-                int move = GetNextMove(ref index, ref checkedMoves,
-                    entryBestMove, killerMoves);
+                int move = GetNextMove(ref index, ref checkedMoves);
                 if (isFirstChild)
                 {
                     bestMove = move;
@@ -355,12 +304,14 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-                int childScore = -Negamax(currentDepth + 1, searchDepth, state, -beta, -alpha);
+                int childScore = -Negamax(currentDepth + 1, state, -beta, -alpha);
                 state.UndoMove(move, currentPlayer);
 
                 if (childScore > score)
                 {
                     score = childScore;
+                    bestMove = move;
+
                     if (score > alpha)
                     {
                         alpha = score;
@@ -375,15 +326,6 @@ namespace Connect4
                             if (index <= 0)
                             {
                                 betaCutoffsOnOrderedChildren++;
-                            }
-
-                            // Do not store this move as a killer move if it is already in
-                            // the first slot and both slots are in use (not equal to -1),
-                            // or if it's not in the first slot and the second slot is empty.
-                            if ((killerMoves[0] == bestMove) == (killerMoves[1] == -1))
-                            {
-                                killerMoves[1] = killerMoves[0];
-                                killerMoves[0] = bestMove;
                             }
 
                             break;
@@ -416,7 +358,7 @@ namespace Connect4
             }
 
             // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(searchDepth, bestMove, state.Hash, score, flag);
+            transpositionTable.Add(currentDepth, bestMove, state.Hash, score, flag);
 
             //if (currentPlayer == 0 && guess != 0 && searchDepth == maxMoves
             //    && flag != NodeTypeLower)
@@ -452,26 +394,13 @@ namespace Connect4
                 : -1;
         }
 
-        private int GetNextMove(ref int i, ref ulong checkedMoves, int shallowLookup,
-            int[] killerMoves)
+        private int GetNextMove(ref int i, ref ulong checkedMoves)
         {
             int move;
-            int orderedMoves = 1 + killerMovesEntrySize;
             ulong moveMask;
             do
             {
-                if (i == -orderedMoves)
-                {
-                    move = shallowLookup;
-                }
-                else if (i < 0)
-                {
-                    move = killerMoves[i + killerMovesEntrySize];
-                }
-                else
-                {
-                    move = staticMoveOrdering[i];
-                }
+                move = staticMoveOrdering[i];
 
                 i++;
                 moveMask = 1UL << (7 * move);
