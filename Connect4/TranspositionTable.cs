@@ -19,7 +19,7 @@ namespace Connect4
         // Do not change this number.
         private const int indexBits = 19;
 
-        public const int TableSize = 1 << (hashIndexBits + 1);
+        public const int TableSize = 2 * 60000049;//1 << (hashIndexBits + 1); //140000099
         public const long MemorySpaceBytes = sizeof(ulong) * (long)TableSize;
 
         private long size = 0;
@@ -44,7 +44,7 @@ namespace Connect4
             // The index is the hashIndexBits most significant bits and a zero
             // as the least significant bit to distinguish between the always and
             // depth entries.
-            int index = (int)((hash >> (64 - hashIndexBits)) << 1);
+            int index = 2 * (int)(hash % (TableSize / 2));// (int)((hash >> (64 - hashIndexBits)) << 1);
 
             ulong currentEntry = table[index];
 
@@ -82,16 +82,19 @@ namespace Connect4
             // Test if the table contains the position.
             if (TryGet(state.Hash, out result))
             {
+                bestMove = (int)((result >> 16) & 0x7);
+
                 // Test if the table also contains the flipped position and use
                 // this position instead if it is deeper.
+                // TODO: Ignore check if Hash == FlippedHash?
                 ulong flippedResult;
                 if (TryGet(state.FlippedHash, out flippedResult)
                     && (flippedResult & 0x3F) > (result & 0x3F))
                 {
                     result = flippedResult;
+                    bestMove = state.Width - (int)((flippedResult >> 16) & 0x7) - 1;
                 }
 
-                bestMove = (int)((result >> 16) & 0x7);
                 return true;
             }
 
@@ -110,7 +113,7 @@ namespace Connect4
         {
             requests++;
 
-            int index = (int)((hash >> (64 - hashIndexBits)) << 1);
+            int index = 2 * (int)(hash % (TableSize / 2));// (int)((hash >> (64 - hashIndexBits)) << 1);(int)((hash >> (64 - hashIndexBits)) << 1);
             ulong maskedHash = hash & (((ulong)1 << (64 - indexBits)) - 1);
 
             result = table[index];

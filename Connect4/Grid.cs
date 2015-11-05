@@ -22,16 +22,32 @@ namespace Connect4
 
         private int seed;
 
-        // This three dimensional table is accessed by height, width then player.
-        private ulong[] zobristTable;
-
         // The hash of the current position.
-        private ulong hash = 0;
-        public ulong Hash { get { return hash; } }
+        public ulong Hash
+        {
+            get
+            {
+                return ((playerPositions[0] | playerPositions[1]) + bottomRow) | playerPositions[0];
+            }
+        }
 
         // The hash of the mirror image of the current position.
-        private ulong flippedHash = 0;
-        public ulong FlippedHash { get { return flippedHash; } }
+        public ulong FlippedHash
+        {
+            get
+            {
+                ulong hash = Hash;
+                ulong left1  = ((0x7FUL << (0 * (height + 1))) & hash) << (6 * (height + 1));
+                ulong left2  = ((0x7FUL << (1 * (height + 1))) & hash) << (4 * (height + 1));
+                ulong left3  = ((0x7FUL << (2 * (height + 1))) & hash) << (2 * (height + 1));
+                ulong middle = ((0x7FUL << (3 * (height + 1))) & hash) << (0 * (height + 1));
+                ulong right3 = ((0x7FUL << (4 * (height + 1))) & hash) >> (2 * (height + 1));
+                ulong right2 = ((0x7FUL << (5 * (height + 1))) & hash) >> (4 * (height + 1));
+                ulong right1 = ((0x7FUL << (6 * (height + 1))) & hash) >> (6 * (height + 1));
+
+                return left1 | left2 | left3 | middle | right3 | right2 | right1;
+            }
+        }
 
         // Each ulong represents a player's pieces on the board. Each height + 1
         // bits represent a column from bottom to top. If the bit is 0, then the
@@ -69,8 +85,6 @@ namespace Connect4
             }
 
             this.seed = seed;
-
-            InitialiseZobristTable();
         }
 
         // Only to be used by the board at the start of a move.
@@ -86,20 +100,6 @@ namespace Connect4
                 stream.Seek(0, SeekOrigin.Begin);
 
                 return (Grid)formatter.Deserialize(stream);
-            }
-        }
-
-        private void InitialiseZobristTable()
-        {
-            Random random = new Random(seed);
-            zobristTable = new ulong[height * width * 2];
-
-            for (int y = 0; y < zobristTable.Length; y++)
-            {
-                byte[] randomBytes = new byte[sizeof(ulong)];
-                random.NextBytes(randomBytes);
-
-                zobristTable[y] = BitConverter.ToUInt64(randomBytes, 0);
             }
         }
 
@@ -152,11 +152,6 @@ namespace Connect4
             Debug.Assert(row < height);
             Debug.Assert(GetTileState(row, column) == TileState.Empty);
 
-            // Update the hash values.
-            hash ^= zobristTable[(player * width * height) + (column * height) + row];
-            flippedHash ^= zobristTable[
-                (player * width * height) + ((width - column - 1) * height) + row];
-
             // Update the board.
             playerPositions[player] |= 1UL << (column * (height + 1) + row);
         }
@@ -171,11 +166,6 @@ namespace Connect4
 
             // Restore the board.
             playerPositions[player] &= ~(1UL << (column * (height + 1) + row));
-
-            // Restore the hash values.
-            hash ^= zobristTable[(player * width * height) + (column * height) + row];
-            flippedHash ^= zobristTable[
-                (player * width * height) + ((width - column - 1) * height) + row];
         }
 
         public override string ToString()
@@ -218,7 +208,7 @@ namespace Connect4
 
         public override int GetHashCode()
         {
-            return (int)(hash % int.MaxValue);
+            return (int)(Hash % int.MaxValue);
         }
 
         public override bool Equals(object obj)

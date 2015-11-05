@@ -942,5 +942,21 @@ namespace Connect4Test
             Assert.AreEqual(0UL, threats >> ((grid.Height + 1) * grid.Width),
                 "Threats must be on the board");
         }
+
+        [TestMethod()]
+        [DeploymentItem("Connect4.exe")]
+        public void HashAndFlippedHashTestEqualOnSymmetricBoard()
+        {
+            Grid grid = new Grid(7, 6, 0);
+
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+            grid.Move(3, 0);
+            grid.Move(3, 1);
+
+            Assert.AreEqual(grid.Hash, grid.FlippedHash);
+        }
     }
 }
