@@ -29,15 +29,15 @@ namespace Connect4
         {
             ulong playerPosition = playerPositions[player];
 
-            ulong nDiagTest = playerPosition & (playerPosition >> width);
-            ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
-            ulong vertTest = playerPosition & (playerPosition >> (width + 1));
-            ulong horiTest = playerPosition & (playerPosition >> 1);
+            ulong nDiagTest = playerPosition & (playerPosition >> (height + 2));
+            ulong pDiagTest = playerPosition & (playerPosition >> height);
+            ulong vertTest = playerPosition & (playerPosition >> 1);
+            ulong horiTest = playerPosition & (playerPosition >> (height + 1));
 
-            return ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
-                || ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
-                || ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
-                || ((horiTest & (horiTest >> 2)) != 0);
+            return ((nDiagTest & (nDiagTest >> 2 * (height + 2))) != 0)
+                || ((pDiagTest & (pDiagTest >> 2 * height)) != 0)
+                || ((vertTest & (vertTest >> 2)) != 0)
+                || ((horiTest & (horiTest >> 2 * (height + 1))) != 0);
         }
 
         public bool IsValidGameOverAfterMove(int player, int move)
@@ -51,15 +51,15 @@ namespace Connect4
             ulong playerPosition = playerPositions[player]
                 | (ulong)1 << (move + row * (width + 1));
 
-            ulong nDiagTest = playerPosition & (playerPosition >> width);
-            ulong pDiagTest = playerPosition & (playerPosition >> (width + 2));
-            ulong vertTest = playerPosition & (playerPosition >> (width + 1));
-            ulong horiTest = playerPosition & (playerPosition >> 1);
+            ulong nDiagTest = playerPosition & (playerPosition >> (height + 2));
+            ulong pDiagTest = playerPosition & (playerPosition >> height);
+            ulong vertTest = playerPosition & (playerPosition >> 1);
+            ulong horiTest = playerPosition & (playerPosition >> (height + 1));
 
-            return ((nDiagTest & (nDiagTest >> 2 * width)) != 0)
-                || ((pDiagTest & (pDiagTest >> 2 * (width + 2))) != 0)
-                || ((vertTest & (vertTest >> 2 * (width + 1))) != 0)
-                || ((horiTest & (horiTest >> 2)) != 0);
+            return ((nDiagTest & (nDiagTest >> 2 * (height + 2))) != 0)
+                || ((pDiagTest & (pDiagTest >> 2 * height)) != 0)
+                || ((vertTest & (vertTest >> 2)) != 0)
+                || ((horiTest & (horiTest >> 2 * (height + 1))) != 0);
         }
     }
 }

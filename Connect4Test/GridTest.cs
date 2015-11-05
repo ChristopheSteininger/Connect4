@@ -913,11 +913,11 @@ namespace Connect4Test
         {
             ulong threats = grid.GetThreats(player);
 
-            for (int i = 0; i < grid.Height * (grid.Width + 1); i++)
+            for (int i = 0; i < (grid.Height + 1) * grid.Width; i++)
             {
                 ulong mask = 1UL << i;
                 bool isThreat = (threats & mask) == mask;
-                bool isInBuffer = ((i + 1) % (grid.Width + 1)) == 0;
+                bool isInBuffer = ((i + 1) % (grid.Height + 1)) == 0;
 
                 if (isThreat)
                 {
@@ -939,7 +939,7 @@ namespace Connect4Test
                 }
             }
 
-            Assert.AreEqual(0UL, threats >> (grid.Height * (grid.Width + 1)),
+            Assert.AreEqual(0UL, threats >> ((grid.Height + 1) * grid.Width),
                 "Threats must be on the board");
         }
     }

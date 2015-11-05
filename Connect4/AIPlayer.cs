@@ -248,7 +248,7 @@ namespace Connect4
                 }
 
                 // Remove the forced move from the threat board.
-                currentOpponentThreats &= ~(0x010101010101UL << forcedMove);
+                currentOpponentThreats &= ~(0x3FUL << (forcedMove * (state.Height + 1)));
 
                 // If there is another threat return the loss immediately, otherwise
                 // play the forced move.
@@ -347,11 +347,7 @@ namespace Connect4
 
             // A bitmap where a 1 means the corresponding move has already been
             // checked. Initialised with a 1 at all invalid moves.
-            uint checkedMoves = state.GetInvalidMovesMask();
-
-            // checkMoves will be equal to this when there are no more valid
-            // moves.
-            uint allMovesChecked = ((uint)1 << state.Width) - 1;
+            ulong checkedMoves = state.GetInvalidMovesMask();
 
             int score = int.MinValue;
 
@@ -361,7 +357,9 @@ namespace Connect4
 
             // Find the best move recursively. A negative index means
             // use the shallow lookup or killer move.
-            while (checkedMoves != allMovesChecked)
+            // checkMoves will be equal to bottomRow when there are no more valid
+            // moves.
+            while (checkedMoves != Grid.bottomRow)
             {
                 int move = GetNextMove(ref index, ref checkedMoves,
                     entryBestMove, killerMoves);
@@ -459,22 +457,22 @@ namespace Connect4
 
         private int GetFirstColumnOfThreatBoard(ulong threatBoard)
         {
-            return((threatBoard & 0x010101010101) != 0) ? 0
-                : ((threatBoard & 0x020202020202) != 0) ? 1
-                : ((threatBoard & 0x040404040404) != 0) ? 2
-                : ((threatBoard & 0x080808080808) != 0) ? 3
-                : ((threatBoard & 0x101010101010) != 0) ? 4
-                : ((threatBoard & 0x202020202020) != 0) ? 5
-                : ((threatBoard & 0x404040404040) != 0) ? 6
+            return((threatBoard & 0x3F) != 0) ? 0
+                : ((threatBoard & (0x3FUL << 7)) != 0) ? 1
+                : ((threatBoard & (0x3FUL << 14)) != 0) ? 2
+                : ((threatBoard & (0x3FUL << 21)) != 0) ? 3
+                : ((threatBoard & (0x3FUL << 28)) != 0) ? 4
+                : ((threatBoard & (0x3FUL << 35)) != 0) ? 5
+                : ((threatBoard & (0x3FUL << 42)) != 0) ? 6
                 : -1;
         }
 
-        private int GetNextMove(ref int i, ref uint checkedMoves, int shallowLookup,
+        private int GetNextMove(ref int i, ref ulong checkedMoves, int shallowLookup,
             int[] killerMoves)
         {
             int move;
             int orderedMoves = 1 + killerMovesEntrySize;
-            uint moveMask;
+            ulong moveMask;
             do
             {
                 if (i == -orderedMoves)
@@ -491,7 +489,7 @@ namespace Connect4
                 }
 
                 i++;
-                moveMask = (uint)1 << move;
+                moveMask = 1UL << (7 * move);
             } while (move == -1 || (checkedMoves & moveMask) == moveMask);
 
             checkedMoves |= moveMask;

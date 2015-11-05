@@ -56,26 +56,27 @@ namespace Connect4
             ulong playerPosition = playerPositions[player];
 
             // Check for horizontal threats.
-            ulong pairs = playerPosition & (playerPosition >> 1);
-            ulong triples = pairs & (pairs >> 1);
-            ulong threats = (((pairs >> 2) & playerPosition) << 1) // rights.
-                | (((pairs << 3) & playerPosition) >> 1) // lefts.
-                | (triples >> 1) | (triples << 3); // triples.
+            int shift = height + 1;
+            ulong pairs = playerPosition & (playerPosition >> shift);
+            ulong triples = pairs & (pairs >> shift);
+            ulong threats = (((pairs >> (2 * shift)) & playerPosition) << shift) // rights.
+                | (((pairs << (3 * shift)) & playerPosition) >> shift) // lefts.
+                | (triples >> shift) | (triples << (3 * shift)); // triples.
 
             // Check for vertical threats.
-            pairs = playerPosition & (playerPosition << (width + 1));
-            triples = pairs & (pairs << (width + 1));
-            threats |= triples << (width + 1);
+            pairs = playerPosition & (playerPosition << 1);
+            triples = pairs & (pairs << 1);
+            threats |= triples << 1;
 
             // Check for positive diagonal threats (/).
-            pairs = playerPosition & (playerPosition >> width);
-            triples = pairs & (pairs >> width);
-            threats |= (((pairs >> (2 * width)) & playerPosition) << width) // rights.
-                | (((pairs << (3 * width)) & playerPosition) >> width) // lefts.
-                | (triples >> width) | (triples << (3 * width)); // triples.
+            pairs = playerPosition & (playerPosition >> height);
+            triples = pairs & (pairs >> height);
+            threats |= (((pairs >> (2 * height)) & playerPosition) << height) // rights.
+                | (((pairs << (3 * height)) & playerPosition) >> height) // lefts.
+                | (triples >> height) | (triples << (3 * height)); // triples.
 
             // Check for negative diagonal threats (\).
-            int shift = width + 2;
+            shift = height + 2;
             pairs = playerPosition & (playerPosition >> shift);
             triples = pairs & (pairs >> shift);
             threats |= (((pairs >> (2 * shift)) & playerPosition) << shift) // rights.
@@ -83,8 +84,8 @@ namespace Connect4
                 | (triples >> shift) | (triples << (3 * shift)); // triples.
 
             // Get rid of any threats blocked by the opponent or the edge of the board.
-            const ulong borderMask = 0xFF808080808080;
-            return threats & ~(playerPositions[1 - player] | borderMask);
+            const ulong borderMask = 0xFDFBF7EFDFBF; // bottomRow * 2^6.
+            return threats & borderMask & ~playerPositions[1 - player];
         }
     }
 }

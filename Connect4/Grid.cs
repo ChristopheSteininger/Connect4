@@ -33,14 +33,16 @@ namespace Connect4
         private ulong flippedHash = 0;
         public ulong FlippedHash { get { return flippedHash; } }
 
-        // Each ulong represents a player's pieces on the board. Each width + 1
-        // bits represent a row from bottom to top. If the bit is 0, then the
+        // Each ulong represents a player's pieces on the board. Each height + 1
+        // bits represent a column from bottom to top. If the bit is 0, then the
         // player does not have a piece on that position.
         private ulong[] playerPositions;
         public TileState this[int row, int column]
         {
             get { return GetTileState(row, column); }
         }
+
+        public const ulong bottomRow = 0x40810204081;
 
         private string AA1 { get { return PrintRow(5); } }
         private string AA2 { get { return PrintRow(4); } }
@@ -103,7 +105,7 @@ namespace Connect4
 
         private TileState GetTileState(int row, int column)
         {
-            ulong mask = (ulong)1 << (column + row * (width + 1));
+            ulong mask = (ulong)1 << (column * (height + 1) + row);
             if ((playerPositions[0] & mask) == mask)
             {
                 return TileState.Player1;
@@ -123,15 +125,18 @@ namespace Connect4
                 && nextFreeTile[column] == row;
         }
 
-        public uint GetInvalidMovesMask()
+        public ulong GetInvalidMovesMask()
         {
-            return (uint)((playerPositions[0] | playerPositions[1]) >> ((width + 1) * (height - 1)));
+            return ((playerPositions[0] | playerPositions[1]) >> (height - 1)) & bottomRow;
         }
 
+        /// <summary>
+        /// Returns a board with a 1 in each location corresponding to a valid move.
+        /// Also sets the bottom most row and the tops of full columnns to 1.
+        /// </summary>
         public ulong GetValidMovesMask()
         {
-            return ((playerPositions[0] | playerPositions[1]) << (width + 1))
-                | ((1UL << width) - 1);
+            return ((playerPositions[0] | playerPositions[1]) << 1) | bottomRow;
         }
 
         public bool IsValidMove(int column)
@@ -153,7 +158,7 @@ namespace Connect4
                 (player * width * height) + ((width - column - 1) * height) + row];
 
             // Update the board.
-            playerPositions[player] |= (ulong)1 << (column + row * (width + 1));
+            playerPositions[player] |= 1UL << (column * (height + 1) + row);
         }
 
         public void UndoMove(int column, int player)
@@ -165,7 +170,7 @@ namespace Connect4
             Debug.Assert(GetTileState(row, column) != TileState.Empty);
 
             // Restore the board.
-            playerPositions[player] &= ~((ulong)1 << (column + row * (width + 1)));
+            playerPositions[player] &= ~(1UL << (column * (height + 1) + row));
 
             // Restore the hash values.
             hash ^= zobristTable[(player * width * height) + (column * height) + row];
