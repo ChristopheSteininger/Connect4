@@ -60,8 +60,6 @@ namespace Connect4
             grid.Move(2, 1);
             grid.Move(3, 0);
             grid.Move(2, 1);
-            grid.Move(2, 0);
-            grid.Move(2, 1);
         }
 
         public void OnStart()

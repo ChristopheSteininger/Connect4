@@ -22,7 +22,7 @@ namespace Connect4
         private int[] staticMoveOrdering = new int[] { 3, 2, 4, 1, 5, 0, 6 };
 
         // Fields used during search.
-        private int moveNumber = 12;
+        private int moveNumber = 10;
         private int finalMove;
 
         private AILog log;
@@ -290,13 +290,13 @@ namespace Connect4
             int index = 0;
             bool isFirstChild = true;
 
-            // Find the best move recursively. A negative index means
-            // use the shallow lookup or killer move.
+            // Find the best move recursively.
             // checkMoves will be equal to bottomRow when there are no more valid
             // moves.
             while (checkedMoves != Grid.bottomRow)
             {
-                int move = GetNextMove(ref index, ref checkedMoves);
+                int move = GetNextMove(ref index, ref checkedMoves,
+                    validMovesMask, playerThreats);
                 if (isFirstChild)
                 {
                     bestMove = move;
@@ -394,17 +394,25 @@ namespace Connect4
                 : -1;
         }
 
-        private int GetNextMove(ref int i, ref ulong checkedMoves)
+        private int GetNextMove(ref int i, ref ulong checkedMoves,
+            ulong validMovesMask, ulong playerThreats)
         {
             int move;
             ulong moveMask;
+            bool skipRuinThreat;
+
+            ulong threatsAbove = playerThreats & (validMovesMask << 1);
             do
             {
-                move = staticMoveOrdering[i];
+                move = staticMoveOrdering[i % 7];
 
                 i++;
                 moveMask = 1UL << (7 * move);
-            } while (move == -1 || (checkedMoves & moveMask) == moveMask);
+
+                // A player should not in general play below their own threats.
+                skipRuinThreat = i < 7
+                    && ((threatsAbove & (0x3FUL << (7 * move))) != 0);
+            } while (move == -1 || skipRuinThreat || (checkedMoves & moveMask) == moveMask);
 
             checkedMoves |= moveMask;
 

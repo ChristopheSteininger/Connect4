@@ -59,6 +59,12 @@ namespace Connect4
         }
 
         public const ulong bottomRow = 0x40810204081;
+        public const ulong allRows = bottomRow
+            | (bottomRow << 1)
+            | (bottomRow << 2)
+            | (bottomRow << 3)
+            | (bottomRow << 4)
+            | (bottomRow << 5);
 
         private string AA1 { get { return PrintRow(5); } }
         private string AA2 { get { return PrintRow(4); } }
@@ -132,11 +138,10 @@ namespace Connect4
 
         /// <summary>
         /// Returns a board with a 1 in each location corresponding to a valid move.
-        /// Also sets the bottom most row and the tops of full columnns to 1.
         /// </summary>
         public ulong GetValidMovesMask()
         {
-            return ((playerPositions[0] | playerPositions[1]) << 1) | bottomRow;
+            return (((playerPositions[0] | playerPositions[1]) << 1) + bottomRow) & allRows;
         }
 
         public bool IsValidMove(int column)
