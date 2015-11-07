@@ -124,14 +124,13 @@ namespace Connect4
             int[] scores = new int[grid.Width];
             int[] scoreTypes = new int[grid.Width];
             ulong entry;
-            int dummy;
             for (int move = 0; move < grid.Width; move++)
             {
                 if (grid.IsValidMove(move))
                 {
                     grid.Move(move, player);
 
-                    if (transpositionTable.Lookup(grid, out entry, out dummy))
+                    if (transpositionTable.Lookup(grid.Hash, out entry))
                     {
                         scores[move] = -TranspositionTable.GetScore(entry);
                         scoreTypes[move] = TranspositionTable.GetNodeType(entry);
@@ -225,11 +224,15 @@ namespace Connect4
             }
 
             // Will be set to the best move of the lookup.
-            int entryBestMove;
+            int entryBestMove = -1;
+
+            // Check if the position or the flipped position should be used for the lookup.
+            ulong hash = Math.Min(state.Hash, state.FlippedHash);
+            bool usingFlippedPosition = hash != state.Hash;
 
             // Check if this state has already been visited.
             ulong entry;
-            if (transpositionTable.Lookup(state, out entry, out entryBestMove))
+            if (transpositionTable.Lookup(hash, out entry))
             {
                 // If the state has been visited, then return immediately or
                 // improve the alpha and beta values depending on the node type.
@@ -240,6 +243,13 @@ namespace Connect4
 
                 // The type is stored in bits 6 to 7 of the entry.
                 int entryType = (int)((entry >> 6) & 0x3);
+                
+                // Flip the best move if necessary.
+                entryBestMove = (int)((entry >> 16) & 0x7);
+                if (usingFlippedPosition)
+                {
+                    entryBestMove = 6 - entryBestMove;
+                }
 
                 switch (entryType)
                 {
@@ -358,7 +368,8 @@ namespace Connect4
             }
 
             // Store the score in the t-table in case the same state is reached later.
-            transpositionTable.Add(currentDepth, bestMove, state.Hash, score, flag);
+            int moveToStore = (usingFlippedPosition) ? 6 - bestMove : bestMove;
+            transpositionTable.Add(currentDepth, moveToStore, hash, score, flag);
 
             if (currentDepth == moveNumber)
             {

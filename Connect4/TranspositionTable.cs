@@ -19,7 +19,7 @@ namespace Connect4
         // Do not change this number.
         private const int indexBits = 19;
 
-        public const int TableSize = 2 * 60000049;//1 << (hashIndexBits + 1); //140000099
+        public const int TableSize = 2 * 60000049;
         public const long MemorySpaceBytes = sizeof(ulong) * (long)TableSize;
 
         private long size = 0;
@@ -77,27 +77,7 @@ namespace Connect4
             }
         }
 
-        public bool Lookup(Grid state, out ulong result, out int bestMove)
-        {
-            // Test if the table contains the position.
-            if (TryGet(state.Hash, out result))
-            {
-                bestMove = (int)((result >> 16) & 0x7);
-                return true;
-            }
-
-            // Otherwise test if the table contains the flipped position.
-            if (TryGet(state.FlippedHash, out result))
-            {
-                bestMove = state.Width - (int)((result >> 16) & 0x7) - 1;
-                return true;
-            }
-
-            bestMove = -1;
-            return false;
-        }
-
-        private bool TryGet(ulong hash, out ulong result)
+        public bool Lookup(ulong hash, out ulong result)
         {
             requests++;
 
