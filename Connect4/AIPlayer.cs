@@ -22,7 +22,7 @@ namespace Connect4
         private int[] staticMoveOrdering = new int[] { 3, 2, 4, 1, 5, 0, 6 };
 
         // Fields used during search.
-        private int moveNumber = 10;
+        private int moveNumber = 6;
         private int finalMove;
 
         private AILog log;
@@ -218,7 +218,7 @@ namespace Connect4
 
             // This must be a draw if there are no forced moves and only two
             // moves left in the game.
-            if (currentDepth >= maxMoves - 2)
+            if (currentDepth >= maxMoves - 1)
             {
                 endNodesSearched++;
                 return 0;
@@ -267,7 +267,7 @@ namespace Connect4
 
                 // At this point alpha or beta may have been improved, so check if
                 // this is a cuttoff.
-                if (beta <= alpha)
+                if (Math.Sign(beta) <= Math.Sign(alpha))
                 {
                     alphaBetaCutoffs++;
 
@@ -316,7 +316,7 @@ namespace Connect4
                     {
                         alpha = score;
                         // Check if this a cutoff.
-                        if (alpha >= beta)
+                        if (Math.Sign(alpha) >= Math.Sign(beta))
                         {
                             betaCutoffs++;
                             if (isFirstChild)
