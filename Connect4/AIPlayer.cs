@@ -267,7 +267,7 @@ namespace Connect4
 
                 // At this point alpha or beta may have been improved, so check if
                 // this is a cuttoff.
-                if (Math.Sign(beta) <= Math.Sign(alpha))
+                if (Math.Sign(alpha) >= Math.Sign(beta))
                 {
                     alphaBetaCutoffs++;
 
@@ -287,7 +287,7 @@ namespace Connect4
             int score = int.MinValue;
 
             int bestMove = -1;
-            int index = 0;
+            int index = -1;
             bool isFirstChild = true;
 
             // Find the best move recursively.
@@ -295,7 +295,7 @@ namespace Connect4
             // moves.
             while (checkedMoves != Grid.bottomRow)
             {
-                int move = GetNextMove(ref index, ref checkedMoves,
+                int move = GetNextMove(ref index, ref checkedMoves, entryBestMove,
                     validMovesMask, playerThreats);
                 if (isFirstChild)
                 {
@@ -360,20 +360,6 @@ namespace Connect4
             // Store the score in the t-table in case the same state is reached later.
             transpositionTable.Add(currentDepth, bestMove, state.Hash, score, flag);
 
-            //if (currentPlayer == 0 && guess != 0 && searchDepth == maxMoves
-            //    && flag != NodeTypeLower)
-            //{
-            //    if (score >= 0)
-            //    {
-            //        correctGuesses++;
-            //    }
-            //    else
-            //    {
-            //        incorrectGuesses++;
-            //    }
-            //    guess = -1;
-            //}
-
             if (currentDepth == moveNumber)
             {
                 finalMove = bestMove;
@@ -395,23 +381,32 @@ namespace Connect4
         }
 
         private int GetNextMove(ref int i, ref ulong checkedMoves,
+            int entryBestMove,
             ulong validMovesMask, ulong playerThreats)
         {
             int move;
             ulong moveMask;
-            bool skipRuinThreat;
+            bool skipRuinThreat = false;
 
             ulong threatsAbove = playerThreats & (validMovesMask << 1);
             do
             {
-                move = staticMoveOrdering[i % 7];
+                if (i == -1)
+                {
+                    move = entryBestMove;
+                }
+                else
+                {
+                    move = staticMoveOrdering[i % 7];
+
+                    // A player should not in general play below their own threats.
+                    skipRuinThreat = i < 7
+                        && ((threatsAbove & (0x3FUL << (7 * move))) != 0);
+                }
 
                 i++;
                 moveMask = 1UL << (7 * move);
 
-                // A player should not in general play below their own threats.
-                skipRuinThreat = i < 7
-                    && ((threatsAbove & (0x3FUL << (7 * move))) != 0);
             } while (move == -1 || skipRuinThreat || (checkedMoves & moveMask) == moveMask);
 
             checkedMoves |= moveMask;
