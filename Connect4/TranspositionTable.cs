@@ -83,18 +83,6 @@ namespace Connect4
             if (TryGet(state.Hash, out result))
             {
                 bestMove = (int)((result >> 16) & 0x7);
-
-                // Test if the table also contains the flipped position and use
-                // this position instead if it is deeper.
-                // TODO: Ignore check if Hash == FlippedHash?
-                ulong flippedResult;
-                if (TryGet(state.FlippedHash, out flippedResult)
-                    && (flippedResult & 0x3F) > (result & 0x3F))
-                {
-                    result = flippedResult;
-                    bestMove = state.Width - (int)((flippedResult >> 16) & 0x7) - 1;
-                }
-
                 return true;
             }
 
