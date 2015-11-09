@@ -343,36 +343,51 @@ namespace Connect4
             int index = -1;
             bool isFirstChild = true;
 
-            if (currentPlayer == 0
-                && alpha < infinity
-                && GuessScore(playerThreats, opponentThreats) == 1)
+            // If no parent of this position has tried a null-window search yet,
+            // try guessing the score of this position.
+            if (allowNullWindow)
             {
-                allowNullWindow = false;
-                SearchResult nullResult = Negamax(
-                        currentDepth, state, infinity, infinity + 1, allowNullWindow);
-                if (nullResult.GetValue() == infinity)
+                int guess = (currentPlayer == 0)
+                    ? GuessScore(0, playerThreats, opponentThreats)
+                    : GuessScore(1, opponentThreats, playerThreats);
+
+                // Check if there is a guess for this position.
+                if (guess != 0)
                 {
-                    correctGuesses++;
-                    return nullResult;
+                    int nullAlpha;
+                    int nullBeta;
+                    int expectedScore;
+
+                    // If this is likely to be a win, search this position with a
+                    // null window centered at +infinity.
+                    if (guess == 1)
+                    {
+                        nullAlpha = infinity;
+                        nullBeta = infinity + 1;
+                        expectedScore = infinity;
+                    }
+
+                    // If this is likely to be a loss.
+                    else
+                    {
+                        nullAlpha = -infinity - 1;
+                        nullBeta = -infinity;
+                        expectedScore = -infinity;
+                    }
+
+                    allowNullWindow = false;
+                    SearchResult nullResult = Negamax(
+                            currentDepth, state, nullAlpha, nullBeta, allowNullWindow);
+
+                    // If the guess is correct, return immediately.
+                    if (nullResult.GetValue() == expectedScore)
+                    {
+                        correctGuesses++;
+                        return nullResult;
+                    }
+
+                    incorrectGuesses++;
                 }
-
-                incorrectGuesses++;
-            }
-
-            else if (currentPlayer == 1
-                && beta > -infinity
-                && GuessScore(opponentThreats, playerThreats) == 1)
-            {
-                allowNullWindow = false;
-                SearchResult nullResult = Negamax(
-                        currentDepth, state, -infinity - 1, -infinity, allowNullWindow);
-                if (nullResult.GetValue() == -infinity)
-                {
-                    correctGuesses++;
-                    return nullResult;
-                }
-
-                incorrectGuesses++;
             }
 
             // Find the best move recursively.
@@ -503,47 +518,48 @@ namespace Connect4
 
         public int GuessScore(int player, ulong p0Threats, ulong p1Threats)
         {
-            //if ((p1Threats & (p1Threats << (width + 1))) != 0)
-            //{
-            //    return 0;
-            //}
-
-            ulong rowMask = Grid.bottomRow;
-
-            ulong takenColumns = 0UL;
-
-            bool p0Odd = false;
-            //bool p0Even = false;
-            //bool p1Odd = false;
-            bool p1Even = false;
-
-            for (int row = 0; row < 6 && (p0Threats != 0 || p1Threats != 0); row++)
+            // Fast return, since this common close to the root.
+            // No guess if possible unless both players have a threat.
+            if (p0Threats == 0 || p1Threats == 0)
             {
-                // Take all threats in this row which have no threats below.
-                ulong maskedPlayerThreats = (p0Threats & rowMask) & ~takenColumns;
-                ulong maskedOpponentThreats = (p1Threats & rowMask) & ~takenColumns;
-
-                bool oddRow = (row & 1) == 0;
-                p0Odd = p0Odd || (maskedPlayerThreats != 0 && oddRow);
-                p1Even = p1Even || (maskedOpponentThreats != 0 && !oddRow);
-
-                if (p0Odd && p1Even)
-                {
-                    return 1;
-                }
-
-                // Update the taken columns;
-                takenColumns = (takenColumns | maskedPlayerThreats | maskedOpponentThreats) << 1;
-
-                rowMask <<= 1;
+                return 0;
             }
 
+            ulong maskedP0Threats = GetMaskedThreatBoard(p0Threats);
+            ulong maskedP1Threats = GetMaskedThreatBoard(p1Threats);
+
+            // Get the threat boards for both players with the useless threats removed.
+            ulong finalP0Threats = p0Threats & ~maskedP1Threats;
+            ulong finalP1Threats = p1Threats & ~maskedP0Threats;
+
+            // Find if either player has any odd or even (useful) threats.
+            bool p0Odd = (finalP0Threats & Grid.oddRows) != 0;
+            bool p0Even = (finalP0Threats & Grid.evenRows) != 0;
+            bool p1Odd = (finalP1Threats & Grid.oddRows) != 0;
+            bool p1Even = (finalP1Threats & Grid.evenRows) != 0;
+
+            bool p0Win = p0Odd && p1Even;
+            bool p1Win = false;
+
+            // Return 1 if it looks like the current player has won.
+            if ((player == 0 && p0Win) || (player == 1 && p1Win))
+            {
+                return 1;
+            }
+
+            // Return -1 if the opposing player has won.
+            else if (p0Win || p1Win)
+            {
+                return -1;
+            }
+
+            // Return 0 to indicate no guess.
             return 0;
         }
 
         private ulong GetMaskedThreatBoard(ulong threatBoard)
         {
-            ulong maskedThreatBoard = threatBoard;
+            ulong maskedThreatBoard = (threatBoard << 1) & Grid.allRows;
             maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
             maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
             maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;

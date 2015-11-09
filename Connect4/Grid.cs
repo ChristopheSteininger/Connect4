@@ -65,6 +65,8 @@ namespace Connect4
             | (bottomRow << 3)
             | (bottomRow << 4)
             | (bottomRow << 5);
+        public const ulong oddRows = bottomRow | (bottomRow << 2) | (bottomRow << 4);
+        public const ulong evenRows = oddRows << 1;
 
         private string AA1 { get { return PrintRow(5); } }
         private string AA2 { get { return PrintRow(4); } }
