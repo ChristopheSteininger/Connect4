@@ -7,50 +7,6 @@ namespace Connect4
 {
     partial class Grid
     {
-        public int GuessScore(int player)
-        {
-            ulong p0Threats = GetThreats(0);
-            ulong p1Threats = GetThreats(1);
-
-            if ((p1Threats & (p1Threats << (width + 1))) != 0)
-            {
-                return 0;
-            }
-
-            ulong rowMask = (1UL << width) - 1;
-
-            ulong takenColumns = 0UL;
-
-            bool p0Odd = false;
-            //bool p0Even = false;
-            //bool p1Odd = false;
-            bool p1Even = false;
-
-            for (int row = 0; p0Threats != 0 || p1Threats != 0; row++)
-            {
-                // Take all threats in this row which have no threats below.
-                ulong maskedPlayerThreats = (p0Threats & rowMask) & ~takenColumns;
-                ulong maskedOpponentThreats = (p1Threats & rowMask) & ~takenColumns;
-
-                bool oddRow = (row & 1) == 0;
-                p0Odd = p0Odd || (maskedPlayerThreats != 0 && oddRow);
-                p1Even = p1Even || (maskedOpponentThreats != 0 && !oddRow);
-
-                if (p0Odd && p1Even)
-                {
-                    return 1;
-                }
-
-                // Update the taken columns;
-                takenColumns |= maskedPlayerThreats | maskedOpponentThreats;
-
-                p0Threats >>= width + 1;
-                p1Threats >>= width + 1;
-            }
-
-            return 0;
-        }
-
         public ulong GetThreats(int player)
         {
             ulong playerPosition = playerPositions[player];

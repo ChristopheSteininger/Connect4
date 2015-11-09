@@ -7,8 +7,42 @@ namespace Connect4
 {
     class AIPlayer : Player
     {
+        private struct SearchResult
+        {
+            public int score;
+
+            public static SearchResult operator -(SearchResult a)
+            {
+                a.score = -a.score;
+                return a;
+            }
+
+            public SearchResult(int value, int depth)
+            {
+                score = Math.Sign(value) * (infinity - depth);
+            }
+
+            public int GetValue() => Math.Sign(score) * infinity;
+
+            public int GetDepth()
+            {
+                if (score > 0)
+                {
+                    return infinity - score;
+                }
+                else if (score < 0)
+                {
+                    return infinity + score;
+                }
+                else
+                {
+                    return 42;
+                }
+            }
+        }
+
         // Search constants.
-        private const int infinity = 127;
+        private const int infinity = 100;
         private const int NodeTypeExact = 1;
         private const int NodeTypeUpper = 2;
         private const int NodeTypeLower = 3;
@@ -40,6 +74,8 @@ namespace Connect4
         private long betaCutoffs;
         private long betaCutoffsOnFirstChild;
         private long betaCutoffsOnOrderedChildren;
+        private long correctGuesses;
+        private long incorrectGuesses;
         private double totalRuntime = 0;
 
         public AIPlayer(int player, Board board)
@@ -100,6 +136,8 @@ namespace Connect4
             betaCutoffs = 0;
             betaCutoffsOnFirstChild = 0;
             betaCutoffsOnOrderedChildren = 0;
+            correctGuesses = 0;
+            incorrectGuesses = 0;
 
             // Print the start time of the search.
             string updateText = String.Format(
@@ -108,7 +146,7 @@ namespace Connect4
 
             DateTime startTime = DateTime.Now;
             
-            int score = Negamax(moveNumber, grid, -infinity, infinity);
+            SearchResult result = Negamax(moveNumber, grid, -infinity, infinity);
 
             double runtime = (DateTime.Now - startTime).TotalMilliseconds;
             totalRuntime += runtime;
@@ -144,7 +182,7 @@ namespace Connect4
                 }
             }
 
-            PrintMoveStatistics(runtime, grid, score, scores, scoreTypes);
+            PrintMoveStatistics(runtime, grid, result, scores, scoreTypes);
 
             moveNumber += 2;
 
@@ -157,7 +195,8 @@ namespace Connect4
             log.EndGame(winner);
         }
 
-        private int Negamax(int currentDepth, Grid state, int alpha, int beta)
+        private SearchResult Negamax(int currentDepth, Grid state, int alpha, int beta,
+            bool allowNullWindow = true)
         {
             int currentPlayer = currentDepth & 1;
             int originalAlpha = alpha;
@@ -179,7 +218,7 @@ namespace Connect4
                     finalMove = GetFirstColumnOfThreatBoard(currentPlayerThreats);
                 }
 
-                return infinity - currentDepth;
+                return new SearchResult(infinity, currentDepth);
             }
 
             ulong opponentThreats = state.GetThreats(1 - currentPlayer);
@@ -204,15 +243,17 @@ namespace Connect4
                 if (currentOpponentThreats != 0)
                 {
                     endNodesSearched++;
-                    return -infinity + currentDepth + 1;
+
+                    return new SearchResult(-infinity, currentDepth + 1);
                 }
 
                 // Take the single forced move.
                 state.Move(forcedMove, currentPlayer);
-                int childScore = -Negamax(currentDepth + 1, state, -beta, -alpha);
+                SearchResult childResult
+                    = -Negamax(currentDepth + 1, state, -beta, -alpha, allowNullWindow);
                 state.UndoMove(forcedMove, currentPlayer);
-
-                return childScore;
+                
+                return childResult;
             }
 
             // This must be a draw if there are no forced moves and only two
@@ -220,7 +261,8 @@ namespace Connect4
             if (currentDepth >= maxMoves - 1)
             {
                 endNodesSearched++;
-                return 0;
+
+                return new SearchResult(0, currentDepth);
             }
 
             // Will be set to the best move of the lookup.
@@ -239,7 +281,8 @@ namespace Connect4
                 tableLookups++;
 
                 // The score is stored in bits 8 to 15 of the entry.
-                int entryScore = (int)(((entry >> 8) & 0xFF) - 128);
+                int encoded = (int)(((entry >> 8) & 0xFF) - 128);
+                SearchResult lookupResult = new SearchResult { score = encoded };
 
                 // The type is stored in bits 6 to 7 of the entry.
                 int entryType = (int)((entry >> 6) & 0x3);
@@ -260,24 +303,24 @@ namespace Connect4
                         {
                             finalMove = entryBestMove;
                         }
-                        return entryScore;
+                        return lookupResult;
 
                     // If the entry score is an upper bound on the actual score,
                     // see if the current upper bound can be reduced.
                     case NodeTypeUpper:
-                        beta = Math.Min(beta, entryScore);
+                        beta = Math.Min(beta, lookupResult.GetValue());
                         break;
 
                     // If the entry score is a lower bound on the actual score,
                     // see if the current lower bound can be increased.
                     case NodeTypeLower:
-                        alpha = Math.Max(alpha, entryScore);
+                        alpha = Math.Max(alpha, lookupResult.GetValue());
                         break;
                 }
 
                 // At this point alpha or beta may have been improved, so check if
                 // this is a cuttoff.
-                if (Math.Sign(alpha) >= Math.Sign(beta))
+                if (alpha >= beta)
                 {
                     alphaBetaCutoffs++;
 
@@ -286,7 +329,7 @@ namespace Connect4
                         finalMove = entryBestMove;
                     }
 
-                    return entryScore;
+                    return lookupResult;
                 }
             }
 
@@ -294,11 +337,43 @@ namespace Connect4
             // checked. Initialised with a 1 at all invalid moves.
             ulong checkedMoves = state.GetInvalidMovesMask();
 
-            int score = int.MinValue;
+            SearchResult result = new SearchResult { score = int.MinValue };
 
             int bestMove = -1;
             int index = -1;
             bool isFirstChild = true;
+
+            if (currentPlayer == 0
+                && alpha < infinity
+                && GuessScore(playerThreats, opponentThreats) == 1)
+            {
+                allowNullWindow = false;
+                SearchResult nullResult = Negamax(
+                        currentDepth, state, infinity, infinity + 1, allowNullWindow);
+                if (nullResult.GetValue() == infinity)
+                {
+                    correctGuesses++;
+                    return nullResult;
+                }
+
+                incorrectGuesses++;
+            }
+
+            else if (currentPlayer == 1
+                && beta > -infinity
+                && GuessScore(opponentThreats, playerThreats) == 1)
+            {
+                allowNullWindow = false;
+                SearchResult nullResult = Negamax(
+                        currentDepth, state, -infinity - 1, -infinity, allowNullWindow);
+                if (nullResult.GetValue() == -infinity)
+                {
+                    correctGuesses++;
+                    return nullResult;
+                }
+
+                incorrectGuesses++;
+            }
 
             // Find the best move recursively.
             // checkMoves will be equal to bottomRow when there are no more valid
@@ -314,19 +389,20 @@ namespace Connect4
 
                 // Apply the move and recurse.
                 state.Move(move, currentPlayer);
-                int childScore = -Negamax(currentDepth + 1, state, -beta, -alpha);
+                SearchResult childResult
+                    = -Negamax(currentDepth + 1, state, -beta, -alpha, allowNullWindow);
                 state.UndoMove(move, currentPlayer);
 
-                if (childScore > score)
+                if (childResult.score > result.score)
                 {
-                    score = childScore;
+                    result = childResult;
                     bestMove = move;
 
-                    if (score > alpha)
+                    if (result.GetValue() > alpha)
                     {
-                        alpha = score;
+                        alpha = result.GetValue();
                         // Check if this a cutoff.
-                        if (Math.Sign(alpha) >= Math.Sign(beta))
+                        if (alpha >= beta)
                         {
                             betaCutoffs++;
                             if (isFirstChild)
@@ -351,12 +427,12 @@ namespace Connect4
             // Determine the type of node, so the score can be used correctly
             // after a lookup.
             int flag;
-            if (score <= originalAlpha)
+            if (result.score <= originalAlpha)
             {
                 flag = NodeTypeUpper;
                 allNodes++;
             }
-            else if (score >= beta)
+            else if (result.score >= beta)
             {
                 flag = NodeTypeLower;
                 cutNodes++;
@@ -369,14 +445,14 @@ namespace Connect4
 
             // Store the score in the t-table in case the same state is reached later.
             int moveToStore = (usingFlippedPosition) ? 6 - bestMove : bestMove;
-            transpositionTable.Add(currentDepth, moveToStore, hash, score, flag);
+            transpositionTable.Add(currentDepth, moveToStore, hash, result.score, flag);
 
             if (currentDepth == moveNumber)
             {
                 finalMove = bestMove;
             }
 
-            return score;
+            return result;
         }
 
         private int GetFirstColumnOfThreatBoard(ulong threatBoard)
@@ -425,7 +501,59 @@ namespace Connect4
             return move;
         }
 
-        private void PrintMoveStatistics(double runtime, Grid grid, int score,
+        public int GuessScore(int player, ulong p0Threats, ulong p1Threats)
+        {
+            //if ((p1Threats & (p1Threats << (width + 1))) != 0)
+            //{
+            //    return 0;
+            //}
+
+            ulong rowMask = Grid.bottomRow;
+
+            ulong takenColumns = 0UL;
+
+            bool p0Odd = false;
+            //bool p0Even = false;
+            //bool p1Odd = false;
+            bool p1Even = false;
+
+            for (int row = 0; row < 6 && (p0Threats != 0 || p1Threats != 0); row++)
+            {
+                // Take all threats in this row which have no threats below.
+                ulong maskedPlayerThreats = (p0Threats & rowMask) & ~takenColumns;
+                ulong maskedOpponentThreats = (p1Threats & rowMask) & ~takenColumns;
+
+                bool oddRow = (row & 1) == 0;
+                p0Odd = p0Odd || (maskedPlayerThreats != 0 && oddRow);
+                p1Even = p1Even || (maskedOpponentThreats != 0 && !oddRow);
+
+                if (p0Odd && p1Even)
+                {
+                    return 1;
+                }
+
+                // Update the taken columns;
+                takenColumns = (takenColumns | maskedPlayerThreats | maskedOpponentThreats) << 1;
+
+                rowMask <<= 1;
+            }
+
+            return 0;
+        }
+
+        private ulong GetMaskedThreatBoard(ulong threatBoard)
+        {
+            ulong maskedThreatBoard = threatBoard;
+            maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
+            maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
+            maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
+            maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
+            maskedThreatBoard |= (maskedThreatBoard << 1) & Grid.allRows;
+
+            return maskedThreatBoard;
+        }
+
+        private void PrintMoveStatistics(double runtime, Grid grid, SearchResult result,
             int[] scores, int[] scoreTypes)
         {
             Debug.Assert(scores.Length == scoreTypes.Length);
@@ -515,22 +643,23 @@ namespace Connect4
             log.WriteLine();
 
             // Print the score of the chosen move.
-            if (score > 0)
+            if (result.score > 0)
             {
                 WriteLineWithColor("   AI will win latest on move {0}.",
-                    ConsoleColor.Green, infinity - score);
+                    ConsoleColor.Green, result.GetDepth());
             }
-            else if (score < 0)
+            else if (result.score < 0)
             {
                 WriteLineWithColor("   AI will lose on move {0} (assuming perfect play).",
-                    ConsoleColor.Red, infinity + score);
+                    ConsoleColor.Red, result.GetDepth());
             }
             else
             {
-                log.WriteLine("   Move score is {0}.", score);
+                log.WriteLine("   Move score is {0}.", result.score);
             }
 
             log.WriteLine("   Move is {0:N0}.", finalMove);
+            log.WriteLine("Correct/Incorrect guesses: {0:N0}/{1:N0}", correctGuesses, incorrectGuesses);
 
             // Print transposition table statistics.
             log.WriteLine();
